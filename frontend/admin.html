@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - HealthTracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <h1>HealthTracker</h1>
+        <nav>
+            <button onclick="showEntity('roles')" class="nav-btn active">Roles</button>
+            <button onclick="showEntity('diagnosticos')" class="nav-btn">Diagnósticos</button>
+            <button onclick="showEntity('medicamentos')" class="nav-btn">Medicamentos</button>
+            <button onclick="showEntity('usuarios')" class="nav-btn">Usuarios</button>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <!-- Roles Section -->
+        <div id="roles" class="entity-section active">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Roles</h2>
+                    <button class="btn-primary" onclick="openModal('roles', 'create')">+ Nuevo Rol</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar roles..." onkeyup="filterTable('roles')">
+                </div>
+                <table id="roles-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Diagnósticos Section -->
+        <div id="diagnosticos" class="entity-section">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Diagnósticos</h2>
+                    <button class="btn-primary" onclick="openModal('diagnosticos', 'create')">+ Nuevo Diagnóstico</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar diagnósticos..." onkeyup="filterTable('diagnosticos')">
+                </div>
+                <table id="diagnosticos-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Medicamentos Section -->
+        <div id="medicamentos" class="entity-section">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Medicamentos</h2>
+                    <button class="btn-primary" onclick="openModal('medicamentos', 'create')">+ Nuevo Medicamento</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar medicamentos..." onkeyup="filterTable('medicamentos')">
+                </div>
+                <table id="medicamentos-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Usuarios Section -->
+        <div id="usuarios" class="entity-section">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Usuarios</h2>
+                    <button class="btn-primary" onclick="openModal('usuarios', 'create')">+ Nuevo Usuario</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar usuarios..." onkeyup="filterTable('usuarios')">
+                </div>
+                <table id="usuarios-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>Rol</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Nuevo Registro</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="entity-form">
+                <div id="form-fields"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
