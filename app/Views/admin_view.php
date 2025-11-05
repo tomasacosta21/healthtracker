@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - HealthTracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="<?= base_url('styles.css') ?>">
 </head>
 <body>
     <aside class="sidebar">
@@ -129,6 +129,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="<?= base_url('script.js') ?>"></script>
 </body>
 </html>
