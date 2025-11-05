@@ -1,4 +1,77 @@
 // Mock data storage
+
+// Variable global para guardar el ID del plan actual
+let currentPlanIdForTasks = null;
+
+function openTasksModal(planId) {
+    currentPlanIdForTasks = planId;
+    const modal = document.getElementById("tasks-modal");
+    const title = document.getElementById("tasks-modal-title");
+    const container = document.getElementById("tasks-list-container");
+
+    // Buscamos el plan para obtener el nombre
+    const plan = data.planes.find(p => p.id === planId);
+    title.textContent = `Tareas del Plan: ${plan ? plan.nombre : 'ID ' + planId}`;
+
+    // Filtramos las tareas de la data mock
+    const planTasks = data.tareas.filter(t => t.id_plan === planId);
+
+    if (planTasks.length === 0) {
+        container.innerHTML = '<p class="empty-state" style="padding: 20px 0;">No hay tareas para este plan.</p>';
+    } else {
+        // Construimos una tabla simple para las tareas
+        let tasksTable = `
+            <table id="plan-tasks-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f4f4f4;">
+                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ID Tarea</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Descripción</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Estado</th>
+                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Fecha Programada</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        planTasks.forEach(task => {
+            tasksTable += `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.id_tarea}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.descripcion}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.estado}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.fecha_programada || ''}</td>
+                </tr>
+            `;
+        });
+        tasksTable += '</tbody></table>';
+        container.innerHTML = tasksTable;
+    }
+
+    modal.classList.add("active");
+}
+
+function closeTasksModal() {
+    document.getElementById("tasks-modal").classList.remove("active");
+    currentPlanIdForTasks = null;
+}
+
+// Esta función reutiliza el modal principal que ya tienes
+function addNewTaskForPlan() {
+    // Cerramos el modal de tareas
+    closeTasksModal();
+    
+    // Abrimos el modal principal para crear una 'tarea'
+    openModal('tareas', 'create');
+
+    // Usamos un pequeño delay para asegurarnos de que el formulario se haya generado
+    setTimeout(() => {
+        const idPlanInput = document.querySelector('#entity-form input[name="id_plan"]');
+        if (idPlanInput && currentPlanIdForTasks) {
+            // Pre-llenamos el campo del ID del Plan
+            idPlanInput.value = currentPlanIdForTasks;
+        }
+    }, 100);
+}
+
 const data = {
   roles: [{ nombre: "Administrador" }, { nombre: "Profesional" }, { nombre: "Paciente" }],
   diagnosticos: [
@@ -154,6 +227,9 @@ function renderTable(entity) {
                     <td>${item.id_profesional}</td>
                     <td>${item.id_paciente}</td>
                     <td>${item.nombre_diagnostico || ""}</td>
+                    <td class="actions">
+                        <button class="btn-view" onclick="openTasksModal(${item.id})">Ver Tareas</button>
+                    </td>
                     <td>${item.fecha_inicio || ""}</td>
                     <td class="actions">
                         <button class="btn-view" onclick="viewItem('${entity}', ${index})">Ver</button>

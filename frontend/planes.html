@@ -58,11 +58,14 @@
                             <th>Profesional</th>
                             <th>Paciente</th>
                             <th>Diagnóstico</th>
+                            <th>Tareas</th>
                             <th>Fecha Inicio</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
+                    <tbody>
+
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -72,7 +75,7 @@
             <div class="content-card">
                 <div class="header-section">
                     <h2>Tareas</h2>
-                    <button class="btn-primary" onclick="openModal('tareas', 'create')">+ Nueva Tarea</button>
+                    <button class="btn-primary" onclick="openModal('tareas', 'create')">Nueva Tarea</button>
                 </div>
                 <div class="search-bar">
                     <input type="text" placeholder="Buscar tareas..." onkeyup="filterTable('tareas')">
@@ -109,6 +112,22 @@
                     <button type="submit" class="btn-save">Guardar</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="tasks-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="tasks-modal-title">Tareas del Plan</h3>
+                <button class="close-btn" onclick="closeTasksModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="tasks-list-container">
+                    </div>
+                <div class="form-actions" style="justify-content: flex-start; margin-top: 20px;">
+                    <button class="btn-primary" onclick="addNewTaskForPlan()">+ Nueva Tarea</button>
+                </div>
+            </div>
         </div>
     </div>
 
