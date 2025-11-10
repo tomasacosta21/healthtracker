@@ -1,52 +1,43 @@
 <?php
 namespace App\Controllers;
 
-// Importa los modelos
-use App\Models\PlanModel;
 use App\Models\UsuarioModel;
+use App\Models\PlanModel;
 use App\Models\TareaModel;
 
 class ProfesionalController extends BaseController
 {
-    /**
-     * Muestra el dashboard del profesional con datos de la BD.
-     */
     public function index()
     {
-        // Modelos
         $usuarioModel = new UsuarioModel();
         $planModel = new PlanModel();
         $tareaModel = new TareaModel();
 
-        // ID del profesional logueado
-        $idProfesional = $this->session->get('id_usuario');
+        // ID del profesional actual
+        $userId = $this->session->get('id_usuario');
 
-        // Consultas
-        $pacientes = $usuarioModel->where('nombre_rol', 'Paciente')->findAll(); // Simplificado, idealmente serían solo tus pacientes
-        $planes = $planModel->getPlanesPorProfesional($idProfesional);
-        $tareas = $tareaModel->findAll(); // Simplificado, idealmente solo de tus planes
-
-        // Preparamos los datos para la vista
+        // 1. Obtener estadísticas reales
         $data = [
-            'totalPacientes'    => count($pacientes),
-            'planesActivos'     => count($planes), // Asumimos que getPlanesPorProfesional trae solo activos
-            'tareasCompletadas' => $tareaModel->where('estado', 'Completada')->countAllResults(), // Simplificado
-            'tareasPendientes'  => $tareaModel->where('estado', 'Pendiente')->countAllResults(), // Simplificado
-            'listaPlanes'       => $planes,
-            'listaPacientes'    => $pacientes
+            // Cuenta cuántos usuarios tienen rol 'Paciente'
+            'totalPacientes' => $usuarioModel->where('nombre_rol', 'Paciente')->countAllResults(),
+            // Cuenta planes asignados a este profesional
+            'planesActivos'  => $planModel->where('id_profesional', $userId)->countAllResults(),
+            // Cuenta tareas globales (puedes refinar esto para que sean solo de sus pacientes)
+            'tareasCompletadas' => $tareaModel->where('estado', 'Completada')->countAllResults(),
+            'tareasPendientes' => $tareaModel->where('estado', 'Pendiente')->countAllResults(),
         ];
 
-        // Cargamos la vista del dashboard y le pasamos los datos
+        // 2. Obtener listas de datos para las tablas
+        // Trae todos los planes de este profesional
+        $data['listaPlanes'] = $planModel->where('id_profesional', $userId)->findAll();
+        // Trae todos los pacientes
+        $data['listaPacientes'] = $usuarioModel->where('nombre_rol', 'Paciente')->findAll(5); // Limito a 5 recientes
+
         return view('dashboard_profesional', $data);
     }
 
-    /**
-     * Muestra la vista de gestión de planes (tu planes_view.php)
-     */
     public function gestionPlanes()
     {
-        // Aquí puedes cargar datos si esa vista los necesita
-        // por ahora solo la mostramos.
         return view('planes_view');
     }
 }
