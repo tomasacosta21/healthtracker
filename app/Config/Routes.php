@@ -33,6 +33,7 @@ $routes->group('', ['filter' => 'auth'], static function ($routes) {
 // (Requieren estar logueado como 'Administrador')
 $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($routes) {
     $routes->get('/', 'AdminController::index');
+    $routes->get('gestion', 'AdminController::gestion'); // Ruta para el panel CRUD (admin_view.php)
 
     // ABMC de Usuarios 
     // (Usa 'resource' para crear automáticamente las rutas GET, POST, PUT, DELETE)
@@ -64,6 +65,7 @@ $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($ro
 // (Requieren estar logueado como 'Profesional')
 $routes->group('profesional', ['filter' => 'auth:Profesional'], static function ($routes) {
     $routes->get('/', 'ProfesionalController::index');
+    $routes->get('gestion-planes', 'ProfesionalController::gestionPlanes');
 
     // ABMC de Planes de Cuidado (para pacientes) 
     $routes->resource('planes', [

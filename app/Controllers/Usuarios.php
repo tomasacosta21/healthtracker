@@ -8,7 +8,7 @@ class Usuarios extends BaseController
     public function index()
     {
         $model = new UsuarioModel();
-        $data['usuarios'] = $model->getUsuarioActivo();
+        $data['usuarios'] = $model->findAll();
         
         return view('usuarios/lista', $data);
     }
