@@ -18,8 +18,9 @@ class ProfesionalController extends BaseController
 
         // 1. Obtener estadísticas reales
         $data = [
-            // Cuenta cuántos usuarios tienen rol 'Paciente'
-            'totalPacientes' => $usuarioModel->where('nombre_rol', 'Paciente')->countAllResults(),
+            // Cuenta cuántos usuarios tienen rol 'paciente' (case-insensitive)
+            // Usamos LOWER(...) para evitar problemas con mayúsculas/minúsculas en la BD
+            'totalPacientes' => $usuarioModel->where("LOWER(nombre_rol) = 'paciente'")->countAllResults(),
             // Cuenta planes asignados a este profesional
             'planesActivos'  => $planModel->where('id_profesional', $userId)->countAllResults(),
             // Cuenta tareas globales (puedes refinar esto para que sean solo de sus pacientes)
@@ -30,8 +31,8 @@ class ProfesionalController extends BaseController
         // 2. Obtener listas de datos para las tablas
         // Trae todos los planes de este profesional
         $data['listaPlanes'] = $planModel->where('id_profesional', $userId)->findAll();
-        // Trae todos los pacientes
-        $data['listaPacientes'] = $usuarioModel->where('nombre_rol', 'Paciente')->findAll(5); // Limito a 5 recientes
+    // Trae todos los pacientes (case-insensitive)
+    $data['listaPacientes'] = $usuarioModel->where("LOWER(nombre_rol) = 'paciente'")->findAll(5); // Limito a 5 recientes
 
         return view('dashboard_profesional', $data);
     }

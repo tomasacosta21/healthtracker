@@ -29,32 +29,26 @@
             <!-- Stats Cards: Usan variables pasadas desde el Controlador -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon">👥</div>
+                    <img src="<?= base_url('/icons/pacientes.png') ?>" width="100px">    
                     <div class="stat-info">
                         <!-- Se usa el operador ?? 0 por si la variable no está definida aún -->
+                        <!-- Debería consumir de la base de datos-->
                         <div class="stat-value" id="total-pacientes"><?= esc($totalPacientes ?? 0) ?></div>
                         <div class="stat-label">Pacientes Asignados</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📋</div>
+                    <img src="<?= base_url('/icons/planes_activos.png') ?>" width="100px">
                     <div class="stat-info">
                         <div class="stat-value" id="planes-activos"><?= esc($planesActivos ?? 0) ?></div>
                         <div class="stat-label">Planes Activos</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">✅</div>
+                    <img src="<?= base_url('/icons/planes_finalizados.png') ?>" width="100px"
                     <div class="stat-info">
-                        <div class="stat-value" id="tareas-completadas"><?= esc($tareasCompletadas ?? 0) ?></div>
-                        <div class="stat-label">Tareas Completadas (Global)</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⏰</div>
-                    <div class="stat-info">
-                        <div class="stat-value" id="tareas-pendientes"><?= esc($tareasPendientes ?? 0) ?></div>
-                        <div class="stat-label">Tareas Pendientes (Global)</div>
+                        <div class="stat-value" id="planes-inactivos"><?= esc($planesActivos ?? 0) ?></div>
+                        <div class="stat-label">Planes Finalizados</div>
                     </div>
                 </div>
             </div>
