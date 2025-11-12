@@ -1,5 +1,8 @@
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 175f511 (cambios)
 script base de datos:
 CREATE DATABASE IF NOT EXISTS healthtrackerV1;
 USE healthtrackerV1;
@@ -106,7 +109,10 @@ Validaciones de campos y mensajes de confirmación.
 Puntos:  2, 3, 3
 Valor: Control centralizado de usuarios que mejora gobernanza y cumplimiento institucional.
 Riesgo: Medio (consistencia y gobernanza de permisos).
+<<<<<<< HEAD
 
+=======
+>>>>>>> 175f511 (cambios)
 HU: CU-04 — Restablecer contraseña
 Descripción: Como Usuario quiero restablecer mi contraseña de forma segura sin asistencia manual.
 Criterios de aceptación:
@@ -209,6 +215,7 @@ Puntos: 3
 Valor: 8,5,3
 Riesgo: Bajo (consultas agregadas simples).
 
+<<<<<<< HEAD
 HISTORIAS DEL PROYECTO MVP (DEBEN GENERARSE PRIMERO): CU-01, CU-02, CU-03, CU-04, CU-05, CU-05a, CU-07, CU-08, CU-12.
 
 REGLAS A SEGUIR (VITALES):
@@ -216,3 +223,12 @@ REGLAS A SEGUIR (VITALES):
 1. Patrón de "experto en conocimiento": Existe un controller por entidad del sistema, el mismo gestiona TODO lo relacionado a la entidad, principalmente ABMC. Los roles consumen dichos controllers para llevar adelante sus funcionalidades.
 2. Rutas explícitas en el archivo Routes.php: Manejo semántico y limpio de las rutas, sencillez de acceso y sin acoplamiento. Los roles pueden consumir distintos controllers según la funcionalidad que llevan a cabo.
 3. Archivo script.js único, que define comportamientos claves y generalizados de las vistas pero nada más. Cada dashboard tendrá un bloque <script></script> que gestionará la lógica propia del dashboard.
+=======
+
+HU: ID
+Descripción:
+Criterios de aceptación:
+Puntos:
+Valor:
+Riesgo:
+>>>>>>> 175f511 (cambios)
