@@ -10,7 +10,7 @@ use CodeIgniter\Router\RouteCollection;
 // RUTAS PÚBLICAS
 // (Home público y Autenticación)
 // ===================================================================
-$routes->get('/', 'Home::index'); // Home público del portal [cite: 51, 655]
+$routes->get('/', 'DashboardController::index'); // redirección al login sin sesión o al dashboard segun sesion
 
 $routes->get('login', 'AuthController::login');
 $routes->post('login', 'AuthController::attemptLogin');
@@ -65,18 +65,15 @@ $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($ro
 // (Requieren estar logueado como 'Profesional')
 $routes->group('profesional', ['filter' => 'auth:Profesional'], static function ($routes) {
     $routes->get('/', 'ProfesionalController::index');
-    $routes->get('gestion-planes', 'ProfesionalController::gestionPlanes');
-
-    // ABMC de Planes de Cuidado (para pacientes) 
-    $routes->resource('planes', [
-        'controller' => 'ProfesionalController',
-        'placeholder' => '(:num)',
-        'as' => 'profesional.planes'
-    ]);
+    $routes->get('gestion-planes', 'PlanController::gestionPlanes');
+    $routes->get('gestion-tareas', 'TareasController::gestionTareas');
+    $routes->get('gestion-tipoTarea', 'TipoTareaController::gestionTipoTarea');
 
     // Validación de tareas 
     $routes->post('tareas/validar/(:num)', 'ProfesionalController::validarCumplimiento/$1', ['as' => 'profesional.validar']);
-    
+    $routes->post('planes/crear', 'PlanesController::crearPlan', ['as' => 'profesional.planes.crear']);
+    $routes->post('tareas/crear', 'TareasController::crearTarea', ['as' => 'profesional.tareas.crear']);
+
     // Estadísticas 
     $routes->get('estadisticas', 'ProfesionalController::estadisticas', ['as' => 'profesional.stats']);
 });

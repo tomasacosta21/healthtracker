@@ -10,38 +10,17 @@
     <aside class="sidebar">
         <h1>HealthTracker</h1>
         <nav>
-            <button onclick="showEntity('tipos_tarea')" class="nav-btn active">Tipos de Tarea</button>
-            <button onclick="showEntity('planes')" class="nav-btn">Planes</button>
-            <button onclick="showEntity('tareas')" class="nav-btn">Tareas</button>
+            <button onclick="scrollToEntity('tipos_tarea', this)" class="nav-btn active">Tipos de Tarea</button>
+            <button onclick="scrollToEntity('planes', this)" class="nav-btn">Planes</button>
+            <button onclick="scrollToEntity('tareas', this)" class="nav-btn">Tareas</button>
+            <button onclick="previous()" class="nav-btn">Atras</button>
         </nav>
     </aside>
 
     <main class="main-content">
-        <!-- Tipos de Tarea Section -->
-        <div id="tipos_tarea" class="entity-section active">
-            <div class="content-card">
-                <div class="header-section">
-                    <h2>Tipos de Tarea</h2>
-                    <button class="btn-primary" onclick="openModal('tipos_tarea', 'create')">+ Nuevo Tipo</button>
-                </div>
-                <div class="search-bar">
-                    <input type="text" placeholder="Buscar tipos de tarea..." onkeyup="filterTable('tipos_tarea')">
-                </div>
-                <table id="tipos_tarea-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
+        
         <!-- Planes Section -->
-        <div id="planes" class="entity-section">
+        <div id="planes" class="entity-section active">
             <div class="content-card">
                 <div class="header-section">
                     <h2>Planes</h2>
@@ -64,14 +43,31 @@
                         </tr>
                     </thead>
                     <tbody>
-
+                        <?php $rows = (isset($listaPlanes) && !empty($listaPlanes)) ? $listaPlanes : []; ?>
+                        <?php foreach ($rows as $plan): ?>
+                            <tr data-id="<?= esc($plan->id ?? $plan->id_plan ?? '') ?>">
+                                <td><?= esc($plan->id ?? $plan->id_plan ?? '') ?></td>
+                                <td><?= esc($plan->nombre ?? '') ?></td>
+                                <td><?= esc($plan->id_profesional ?? '-') ?></td>
+                                <td><?= esc($plan->id_paciente ?? '-') ?></td>
+                                <td><?= esc($plan->nombre_diagnostico ?? '-') ?></td>
+                                <td>
+                                    <button class="btn-secondary" onclick="openTasksModal(<?= (int) ($plan->id ?? 0) ?>)">Ver Tareas</button>
+                                </td>
+                                <td><?= esc($plan->fecha_inicio ?? '-') ?></td>
+                                <td>
+                                    <button class="btn-edit" onclick="openModal('planes', 'edit', <?= (int) ($plan->id ?? 0) ?>)">Editar</button>
+                                    <button class="btn-delete" onclick="deleteRecord('planes', <?= (int) ($plan->id ?? 0) ?>)">Eliminar</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
 
         <!-- Tareas Section -->
-        <div id="tareas" class="entity-section">
+        <div id="tareas" class="entity-section active">
             <div class="content-card">
                 <div class="header-section">
                     <h2>Tareas</h2>
@@ -96,7 +92,33 @@
                 </table>
             </div>
         </div>
+
+        <!-- Tipos de Tarea Section -->
+        <div id="tipos_tarea" class="entity-section active">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Tipos de Tarea</h2>
+                    <button class="btn-primary" onclick="openModal('tipos_tarea', 'create')">+ Nuevo Tipo</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" placeholder="Buscar tipos de tarea..." onkeyup="filterTable('tipos_tarea')">
+                </div>
+                <table id="tipos_tarea-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+
+    
 
     <!-- Modal -->
     <div id="modal" class="modal">
@@ -131,6 +153,8 @@
         </div>
     </div>
 
-    <script src="<?= base_url('script.js') ?>"></script>
+    <meta name="base-url" content="<?= base_url() ?>">
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+    <script type="module" src="<?= base_url('public\script.js') ?>"></script>
 </body>
 </html>

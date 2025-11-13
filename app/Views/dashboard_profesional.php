@@ -61,7 +61,7 @@
                         <tr>
                             <th>ID Plan</th>
                             <th>Plan</th>
-                            <th>ID Paciente</th> <!-- Idealmente mostrar Nombre si haces JOIN en el modelo -->
+                            <th>ID Paciente</th> 
                             <th>Diagnóstico</th>
                             <th>Fecha Inicio</th>
                             <th>Acciones</th>
@@ -132,6 +132,8 @@
     </main>
 
     <!-- Eliminamos el script.js con datos falsos porque ahora usamos PHP real -->
-    <!-- <script src="script.js"></script> -->
+    <meta name="base-url" content="<?= base_url() ?>">
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+    <script type="module" src="<?= base_url('js/main.js') ?>"></script>
 </body>
 </html>
