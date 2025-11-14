@@ -91,6 +91,8 @@ $routes->group('paciente', ['filter' => 'auth:Paciente'], static function ($rout
     // Registro de cumplimiento de tareas 
     $routes->post('tareas/cumplir/(:num)', 'PacienteController::registrarCumplimiento/$1', ['as' => 'paciente.cumplir']);
 
+//hacer cambios de controlers, no buenas practicas que PacienteController sea el que se encargue PacienteController
+
     // Gestión de Documentación Médica 
     $routes->resource('documentos', [
         'controller' => 'PacienteController',
