@@ -89,7 +89,9 @@
                 <h3 style="font-size: 24px; margin-bottom: 20px;">Actividad Reciente del Sistema</h3>
                 <table id="actividad-table">
                     <thead>
-                        <tr>
+            <meta name="base-url" content="<?= base_url() ?>">
+            <meta name="csrf-token" content="<?= csrf_hash() ?>">
+            <script type="module" src="<?= base_url('js/main.js') ?>"></script>
                             <th>Usuario</th>
                             <th>Acción</th>
                             <th>Fecha</th>

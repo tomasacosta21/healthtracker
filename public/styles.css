@@ -231,6 +231,11 @@ tbody tr:hover {
   margin-bottom: 20px;
 }
 
+.entity-section.active{
+  display: block;
+  margin-bottom: 20px;
+}
+
 .modal-header h3 {
   font-size: 24px;
 }

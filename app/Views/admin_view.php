@@ -129,6 +129,8 @@
         </div>
     </div>
 
-    <script src="<?= base_url('script.js') ?>"></script>
+    <meta name="base-url" content="<?= base_url() ?>">
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
+    <script type="module" src="<?= base_url('js/main.js') ?>"></script>
 </body>
 </html>
