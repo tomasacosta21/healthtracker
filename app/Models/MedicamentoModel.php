@@ -18,4 +18,9 @@ class MedicamentoModel extends Model
     protected $validationRules = [
         'nombre' => 'required|min_length[2]|max_length[191]'
     ];
+
+    public function getAllMedicamentos()
+    {
+        return $this->findAll();
+    }
 }
