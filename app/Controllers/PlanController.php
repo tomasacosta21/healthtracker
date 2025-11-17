@@ -7,8 +7,11 @@ use App\Models\DiagnosticoModel;
 
 class PlanController extends BaseController
 {
-    public function index(){
-        return view('planes_view');
+    public function index()
+    {
+        // Profesional: listar mis planes
+        // Paciente: listar mis planes (solo lectura)
+        // Admin: si usa plantilla, filtrará por tipo
     }
 
     public function gestionPlanes()
@@ -112,7 +115,8 @@ class PlanController extends BaseController
      */
     public function show($id = null)
     {
-        // TODO: Implementar: $planModel->find($id) y devolver vista detalle
+        // TODO: Implementar: $planModel->find($id) y devolver vista detalle 
+        // Ver plan + sus tareas + progreso
     }
 
     /**
@@ -153,6 +157,11 @@ class PlanController extends BaseController
     public function delete($id = null)
     {
         // TODO: Implementar: comprobar existencia, permisos y eliminar
+    }
+
+        public function new()
+    {
+        // Form crear plan (solo profesional)
     }
 }
 ?>

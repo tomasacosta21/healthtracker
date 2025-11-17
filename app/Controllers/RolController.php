@@ -4,7 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 
-class DiagnosticoController extends BaseController
+class RolController extends BaseController
 {
     public function index() {}
     public function show($id = null) {}

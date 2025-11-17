@@ -137,4 +137,15 @@ class AuthController extends BaseController
         session()->destroy();
         return redirect()->to(base_url('login'));
     }
+
+        // --- Restablecer contraseña ---
+    public function forgotPassword()
+    {
+        // Vista para solicitar reinicio de contraseña
+    }
+
+        public function attemptForgotPassword()
+    {
+        // Generar token + enviar email
+    }
 }

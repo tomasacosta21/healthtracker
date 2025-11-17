@@ -9,7 +9,9 @@ class UsuarioController extends BaseController
     // --- MÉTODOS PARA EL ADMIN (ABMC) ---
     // (ANTES: listarUsuarios)
     public function index()
-    {
+    {   
+        //todo: listar en función de rol
+
         $usuarioModel = new UsuarioModel();
         $data['usuarios'] = $usuarioModel->findAll();
         return view('admin/listar_usuarios', $data); // O la vista que uses
@@ -60,6 +62,11 @@ class UsuarioController extends BaseController
         return redirect()->to(base_url('admin/usuarios'));
     }
 
+        public function new()
+    {
+        // Formulario crear usuario
+    }
+
 
     // --- MÉTODOS PARA OTROS ROLES (PERSONALIZADOS) ---
     
@@ -71,5 +78,16 @@ class UsuarioController extends BaseController
         
         // Asumo que se muestra en el dashboard del profesional
         return view('profesional/dashboard', $data); 
+    }
+
+        // HU-02: Mi Perfil (POST login)
+    public function miPerfil()
+    {
+        // Ver perfil propio
+    }
+
+        public function actualizarPerfil()
+    {
+        // Actualizar datos propios
     }
 }

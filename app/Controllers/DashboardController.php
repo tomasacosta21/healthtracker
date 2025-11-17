@@ -23,4 +23,20 @@ class DashboardController extends BaseController
                 return redirect()->to(base_url('logout'));
         }
     }
+
+        public function adminDashboard()
+    {
+        // KPIS globales de planes (estado, conteos, métricas)
+    }
+
+        public function profesionalDashboard()
+    {
+        // Métricas del profesional (HU10)
+    }
+
+        public function pacienteDashboard()
+    {
+        // Estado general de planes y progreso (HU07)
+    }
+
 }
