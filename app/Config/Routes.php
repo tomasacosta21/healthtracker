@@ -7,103 +7,140 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // ===================================================================
-// RUTAS PÚBLICAS
-// (Home público y Autenticación)
+// 1. RUTAS PÚBLICAS (Auth y Landing)
 // ===================================================================
-$routes->get('/', 'DashboardController::index'); // redirección al login sin sesión o al dashboard segun sesion
+$routes->get('/', 'Home::index'); // Landing pública
 
+// HU-01 y HU-02: Registro y Autenticación
+// (Entidad: Usuario - Manejado por AuthController para lógica de acceso)
 $routes->get('login', 'AuthController::login');
 $routes->post('login', 'AuthController::attemptLogin');
 $routes->get('register', 'AuthController::register');
 $routes->post('register', 'AuthController::attemptRegister');
 $routes->get('logout', 'AuthController::logout');
 
-// ===================================================================
-// RUTAS COMUNES (POST-LOGIN)
-// ===================================================================
-// (Requieren estar logueado, sin importar el rol)
-$routes->group('', ['filter' => 'auth'], static function ($routes) {
-    // Redirige a /admin, /profesional o /paciente según el rol
-    $routes->get('dashboard', 'DashboardController::index');
-});
+// HU-04: Restablecer contraseña
+$routes->get('forgot-password', 'AuthController::forgotPassword');
+$routes->post('forgot-password', 'AuthController::attemptForgotPassword');
+
 
 // ===================================================================
-// RUTAS DE ADMINISTRADOR
+// 2. RUTAS COMUNES (Post-Login)
 // ===================================================================
-// (Requieren estar logueado como 'Administrador')
+// Requieren que el usuario esté logueado, sin importar su rol.
+$routes->group('', ['filter' => 'auth'], static function ($routes) {
+    
+    // Redirección inteligente al dashboard correspondiente según rol
+    $routes->get('dashboard', 'DashboardController::index');
+    
+    // HU-02: Perfil de usuario (Ver mi propio perfil)
+    // Entidad: Usuario
+    $routes->get('perfil', 'UsuarioController::miPerfil');
+    $routes->post('perfil', 'UsuarioController::actualizarPerfil');
+});
+
+
+// ===================================================================
+// 3. RUTAS DE ADMINISTRADOR
+// ===================================================================
+// Filtro: auth:Administrador
 $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($routes) {
     
-    $routes->get('/', 'AdminController::index'); // Dashboard Admin
-    $routes->get('gestion', 'AdminController::gestion');
+    // Dashboard Admin (HU-12 - Vista global)
+    // Entidad: Metricas (o Dashboard)
+    $routes->get('/', 'DashboardController::adminDashboard');
 
-    // --- ABMC de Usuarios (RUTAS EXPLÍCITAS) ---
-    // Aquí está la magia. Usamos el filtro del grupo
-    // y apuntamos a UsuarioController (el experto).
-    
-    // (GET) admin/usuarios  -> Muestra la lista
-    $routes->get('usuarios', 'UsuarioController::index');
-    
-    // (GET) admin/usuarios/new -> Muestra formulario de creación
-    $routes->get('usuarios/new', 'UsuarioController::create');
-    
-    // (POST) admin/usuarios -> Guarda el nuevo usuario
-    $routes->post('usuarios', 'UsuarioController::store');
-    
-    // (GET) admin/usuarios/(:num) -> Muestra un usuario (si lo necesitas)
-    $routes->get('usuarios/(:num)', 'UsuarioController::show/$1');
-    
-    // (GET) admin/usuarios/(:num)/edit -> Muestra formulario de edición
-    $routes->get('usuarios/(:num)/edit', 'UsuarioController::edit/$1');
-    
-    // (POST) admin/usuarios/(:num) -> Actualiza el usuario
-    $routes->post('usuarios/(:num)', 'UsuarioController::update/$1'); 
-    // (Nota: para PUT/DELETE real necesitarías <input type="hidden" name="_method" value="PUT"> en el form)
-
-    // (GET) admin/usuarios/(:num)/delete -> Ruta para borrar (si usas GET)
-    // O (POST) admin/usuarios/(:num)/delete
-    $routes->post('usuarios/(:num)/delete', 'UsuarioController::destroy/$1');
-
-
-    // ABMC de Diagnósticos (sigue apuntando a AdminController por ahora)
-    $routes->resource('diagnosticos', [
-        'controller' => 'AdminController',
+    // HU-03: ABMC Usuarios
+    // Entidad: Usuario
+    // Crea rutas: index, show, new, create, edit, update, delete
+    $routes->resource('usuarios', [
+        'controller' => 'UsuarioController',
         'placeholder' => '(:num)',
-        'as' => 'admin.diagnosticos'
+        'except' => 'show' // Si no necesitas vista detalle individual
     ]);
-    
-    // ... (el resto de tus rutas de admin) ...
+
+    // HU-06: Gestión de Plantillas de Planes (Planes estandarizados)
+    // Entidad: Plan (o PlanPlantilla si creas ese modelo específico)
+    // Usamos PlanController pero quizás filtrando por tipo 'plantilla' internamente
+    $routes->resource('planes-plantillas', [
+        'controller' => 'PlanController',
+        'placeholder' => '(:num)',
+    ]);
+
+    // ABMC de Catálogos (Tablas: diagnosticos, medicamento, tipos_tarea, roles)
+    // Entidad: Diagnostico
+    $routes->resource('diagnosticos', ['controller' => 'DiagnosticoController']);
+    // Entidad: Medicamento
+    $routes->resource('medicamentos', ['controller' => 'MedicamentoController']);
+    // Entidad: TipoTarea
+    $routes->resource('tipos-tarea', ['controller' => 'TipoTareaController']);
+    // Entidad: Rol
+    $routes->resource('roles', ['controller' => 'RolController']);
 });
 
-// ===================================================================
-// RUTAS DE PROFESIONAL
-// ===================================================================
-// (Requieren estar logueado como 'Profesional')
-$routes->group('profesional', ['filter' => 'auth:Profesional'], static function ($routes) {
-    
-    $routes->get('/', 'ProfesionalController::index'); // Dashboard Profesional
 
-    // --- RUTA PERSONALIZADA PARA USUARIOS ---
-    // (GET) profesional/mis-pacientes -> Llama al método personalizado
+// ===================================================================
+// 4. RUTAS DE PROFESIONAL
+// ===================================================================
+// Filtro: auth:Profesional
+$routes->group('profesional', ['filter' => 'auth:Profesional'], static function ($routes) {
+
+    // Dashboard Profesional (HU-10 - Métricas)
+    $routes->get('/', 'DashboardController::profesionalDashboard');
+
+    // Gestión de Pacientes (Listado solo de mis pacientes)
+    // Entidad: Usuario (El experto es UsuarioController)
     $routes->get('mis-pacientes', 'UsuarioController::listarPacientes');
 
-    // ... (el resto de tus rutas de profesional) ...
-    $routes->get('gestion-planes', 'PlanController::gestionPlanes');
-    $routes->post('tareas/validar/(:num)', 'ProfesionalController::validarCumplimiento/$1', ['as' => 'profesional.validar']);
+    // HU-05: Crear y Gestionar Planes de Cuidado
+    // Entidad: Plan
+    $routes->resource('planes', [
+        'controller' => 'PlanController',
+        'placeholder' => '(:num)',
+        // Limitamos a las acciones que el profesional puede hacer
+        // index (listar mis planes), create, store, edit, update, delete (baja lógica)
+    ]);
 
-    // Compatibility aliases (temporal): map old URIs to new controllers/methods
-    // These keep existing links and client calls working while you migrate logic.
-    $routes->get('planes', 'PlanController::index'); // /profesional/planes -> listado
-    $routes->post('planes/crear', 'PlanController::store', ['as' => 'profesional.planes.crear']);
-    $routes->post('planes/eliminar/(:num)', 'PlanController::delete/$1', ['as' => 'profesional.planes.eliminar']);
-    // Tareas por plan (alias) - implementar porPlan en TareaController cuando lo desees
-    $routes->get('tareas/por_plan/(:num)', 'TareaController::porPlan/$1', ['as' => 'profesional.tareas.por_plan']);
+    // HU-05a: ABMC de Tareas dentro de un plan
+    // Entidad: Tarea
+    $routes->resource('tareas', [
+        'controller' => 'TareaController',
+        'placeholder' => '(:num)',
+    ]);
+    
+    // Endpoint específico para obtener tareas de un plan (útil para AJAX/Modales)
+    $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
+
+    // HU-09: Validar Cumplimiento
+    // Entidad: Tarea (Acción específica de negocio)
+    $routes->post('tareas/(:num)/validar', 'TareaController::validarCumplimiento/$1');
 });
 
+
 // ===================================================================
-// RUTAS DE PACIENTE
+// 5. RUTAS DE PACIENTE
 // ===================================================================
-// (Tus rutas de paciente quedan igual)
+// Filtro: auth:Paciente
 $routes->group('paciente', ['filter' => 'auth:Paciente'], static function ($routes) {
-    $routes->get('/', 'PacienteController::index');
-    // ...
+
+    // Dashboard Paciente (HU-07 - Ver mis planes y progreso)
+    $routes->get('/', 'DashboardController::pacienteDashboard');
+
+    // HU-07: Consultar mis planes (Read-only para el paciente)
+    // Entidad: Plan
+    $routes->get('mis-planes', 'PlanController::index'); 
+    $routes->get('mis-planes/(:num)', 'PlanController::show/$1');
+
+    // HU-08: Registrar Progreso (Completar tarea)
+    // Entidad: Tarea
+    $routes->post('tareas/(:num)/completar', 'TareaController::registrarProgreso/$1');
+
+    // HU-11: Documentación Médica
+    // Entidad: Documento (Si existe tabla documentos, sino va en UsuarioController o PlanController)
+    // Asumiendo un DocumentoController:
+    $routes->resource('documentos', [
+        'controller' => 'DocumentoController',
+        'placeholder' => '(:num)',
+        'only' => ['index', 'create', 'store', 'show', 'delete'] // Paciente sube y ve
+    ]);
 });

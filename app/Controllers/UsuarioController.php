@@ -63,7 +63,6 @@ class UsuarioController extends BaseController
 
     // --- MÉTODOS PARA OTROS ROLES (PERSONALIZADOS) ---
     
-    // (Este está perfecto como lo tenías)
     public function listarPacientes()
     {
         $usuarioModel = new UsuarioModel();
