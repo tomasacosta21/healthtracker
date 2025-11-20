@@ -301,13 +301,6 @@ tbody tr:hover {
   font-size: 14px;
 }
 
-.entity-section {
-  display: none;
-}
-
-.entity-section.active {
-  display: block;
-}
 
 .empty-state {
   text-align: center;
