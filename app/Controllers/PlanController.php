@@ -9,6 +9,7 @@ class PlanController extends BaseController
 {
     public function index()
     {
+        
         // Profesional: listar mis planes
         // Paciente: listar mis planes (solo lectura)
         // Admin: si usa plantilla, filtrará por tipo
