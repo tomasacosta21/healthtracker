@@ -7,6 +7,7 @@ use App\Models\PlanModel;
 use App\Models\MedicamentoModel;
 use App\Models\DiagnosticoModel;
 use App\Models\TareaModel;
+use App\Models\TipoTareaModel;
 
 class DashboardController extends BaseController
 {
@@ -74,23 +75,39 @@ class DashboardController extends BaseController
      */
     public function profesionalDashboard()
     {
+        // 1. Instanciar modelos
         $usuarioModel = new UsuarioModel();
         $planModel = new PlanModel();
+        $diagnosticoModel = new DiagnosticoModel();
+        $tareaModel = new TareaModel();
+        $tipoTareaModel = new TipoTareaModel(); // Agregado
         
         $idProfesional = $this->session->get('id_usuario');
 
-        // Usamos los métodos personalizados que vimos en tus Modelos
+        // 2. Obtener datos
         $misPacientes = $usuarioModel->getPacientesPorProfesional($idProfesional);
         $misPlanes    = $planModel->getPlanesPorProfesional($idProfesional);
+        
+        // Datos para los formularios (Selects)
+        $todosLosPacientes = $usuarioModel->getPacientes(); // Para poder asignar plan a cualquier paciente
+        $listaDiagnosticos = $diagnosticoModel->findAll();
+        $listaTiposTarea   = $tipoTareaModel->findAll();
+
+        // Tareas (Opcional: traer todas o filtrar)
+        $listaTareas = $tareaModel->findAll(); 
 
         $data = [
-            // Contadores
-            'totalPacientes' => count($misPacientes),
-            'planesActivos'  => count($misPlanes),
+            // Stats
+            'totalPacientes'    => count($misPacientes),
+            'planesActivos'     => count($misPlanes),
             
-            // Listas para las tablas de la vista
-            'listaPlanes'    => $misPlanes,
-            'listaPacientes' => $misPacientes
+            // Listas para tablas y selects
+            'listaPlanes'       => $misPlanes,
+            'listaPacientes'    => $misPacientes,      
+            'todosLosPacientes' => $todosLosPacientes, 
+            'listaDiagnosticos' => $listaDiagnosticos, 
+            'listaTiposTarea'   => $listaTiposTarea,
+            'listaTareas'       => $listaTareas
         ];
 
         return view('dashboard_profesional', $data);
