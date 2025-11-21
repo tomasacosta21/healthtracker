@@ -9,10 +9,25 @@ class PlanController extends BaseController
 {
     public function index()
     {
-        
-        // Profesional: listar mis planes
-        // Paciente: listar mis planes (solo lectura)
-        // Admin: si usa plantilla, filtrará por tipo
+        $planModel = new PlanModel();
+        $rol = $this->session->get('nombre_rol');
+        $userId = $this->session->get('id_usuario');
+
+        if ($rol === 'Paciente') {
+            $listaPlanes = $planModel->getPlanesPorPaciente($userId);
+        } elseif ($rol === 'Profesional') {
+            $listaPlanes = $planModel->getPlanesPorProfesional($userId);
+        } else {
+            $listaPlanes = $planModel->findAll();
+        }
+
+        $data = [
+            'listaPlanes' => $listaPlanes,
+            'listaDiagnosticos' => (new DiagnosticoModel())->findAll(),
+            'soloLectura' => ($rol === 'Paciente'), // Solo lectura para pacientes
+        ];
+
+        return view('planes_view', $data);
     }
 
     public function gestionPlanes()
@@ -116,8 +131,41 @@ class PlanController extends BaseController
      */
     public function show($id = null)
     {
-        // TODO: Implementar: $planModel->find($id) y devolver vista detalle 
-        // Ver plan + sus tareas + progreso
+        $planModel = new PlanModel();
+        $plan = $planModel->getPlanCompleto($id);
+        
+        if (!$plan) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $rol = $this->session->get('nombre_rol');
+        $userId = $this->session->get('id_usuario');
+        
+        $esPropietario = ($rol === 'Paciente' && $plan->id_paciente == $userId)
+            || ($rol === 'Profesional' && $plan->id_profesional == $userId)
+            || ($rol === 'Administrador');
+
+        if (!$esPropietario) {
+            return redirect()->to(base_url('paciente'))->with('error', 'No autorizado.');
+        }
+
+        $tareas = $planModel->getTareasDelPlan($id);
+        
+        $data = [
+            'plan' => $plan,
+            'tareas' => $tareas,
+            'soloLectura' => ($rol === 'Paciente'),
+        ];
+
+        // Si existe la vista planes/detalle, usarla; si no, usar planes_view con datos del plan
+        if (file_exists(APPPATH . 'Views/planes/detalle.php')) {
+            return view('planes/detalle', $data);
+        } else {
+            // Fallback: mostrar en la vista de listado pero con solo este plan
+            $data['listaPlanes'] = [$plan];
+            $data['listaDiagnosticos'] = (new DiagnosticoModel())->findAll();
+            return view('planes_view', $data);
+        }
     }
 
     /**

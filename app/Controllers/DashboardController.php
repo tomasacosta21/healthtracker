@@ -41,33 +41,33 @@ class DashboardController extends BaseController
      * Dashboard para el ADMINISTRADOR
      * Ruta: /admin
      */
-    //public function adminDashboard()
-    //{
-        // 1. Instanciar modelos necesarios para métricas globales
-    //    $usuarioModel = new UsuarioModel();
-    //    $medicamentoModel = new MedicamentoModel();
-    //    $planModel = new PlanModel();
-      //  $diagnosticoModel = new DiagnosticoModel();
+    public function adminDashboard()
+    {
+      //  1. Instanciar modelos necesarios para métricas globales
+    $usuarioModel = new UsuarioModel();
+    $medicamentoModel = new MedicamentoModel();
+    $planModel = new PlanModel();
+    $diagnosticoModel = new DiagnosticoModel();
 
-        // 2. Recopilar datos
-    //    $data = [
-    //        'totalUsuarios'     => $usuarioModel->countAllResults(),
-    //        'totalMedicamentos' => $medicamentoModel->countAllResults(),
-    //        'totalPlanes'       => $planModel->countAllResults(),
+      //  2. Recopilar datos
+    $data = [
+        'totalUsuarios'     => $usuarioModel->countAllResults(),
+        'totalMedicamentos' => $medicamentoModel->countAllResults(),
+        'totalPlanes'       => $planModel->countAllResults(),
             
-            // Agrupar usuarios por rol para el gráfico/tabla
-    //        'usuariosPorRol'    => $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
-    //                                            ->groupBy('nombre_rol')
-    //                                            ->findAll(),
+          //  Agrupar usuarios por rol para el gráfico/tabla
+        'usuariosPorRol'=> $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
+                                            ->groupBy('nombre_rol')
+                                            ->findAll(),
             
-            // Datos adicionales para las tablas del dashboard
-    //        'actividad'         => [], // Aquí podrías conectar una tabla de logs si la tuvieras
-    //        'diagnosticos'      => $diagnosticoModel->findAll(5) // Traer 5 de ejemplo
-    //    ];
+         //   Datos adicionales para las tablas del dashboard
+           'actividad'=> [], // Aquí podrías conectar una tabla de logs si la tuvieras
+           'diagnosticos'=> $diagnosticoModel->findAll(5) // Traer 5 de ejemplo
+    ];
 
-        // 3. Cargar vista
-    //    return view('dashboard_admin', $data);
-    //}
+      //  3. Cargar vista
+    return view('dashboard_admin', $data);
+    }
 
     /**
      * Dashboard para el PROFESIONAL
@@ -116,50 +116,50 @@ class DashboardController extends BaseController
     /**
      * Dashboard para el PACIENTE
      * Ruta: /paciente
-     
-    * public function pacienteDashboard()
-    * {
-    *    $planModel = new PlanModel();
-    *    $tareaModel = new TareaModel();
-    *    
-    *    $idPaciente = $this->session->get('id_usuario');
+    **/
+    public function pacienteDashboard()
+    {
+        $planModel = new PlanModel();
+        $tareaModel = new TareaModel();
+        
+        $idPaciente = $this->session->get('id_usuario');
 
-*        // 1. Obtener mis planes
-*        $misPlanes = $planModel->getPlanesPorPaciente($idPaciente);
-*        
- *       // 2. Buscar tareas pendientes (Solo de mis planes)
-  *      $tareasPendientes = [];
-   *     $totalCompletadas = 0;
-*
- *       // Extraemos los IDs de los planes para filtrar las tareas
-  *      $planIds = [];
-   *     foreach ($misPlanes as $p) {
-    *        // Manejo robusto de objetos vs arrays
-     *       $planIds[] = is_object($p) ? $p->id : $p['id'];
-      *  }
-*
- *       if (!empty($planIds)) {
-  *          // Buscamos tareas asociadas a esos planes que estén pendientes
-   *         $tareasPendientes = $tareaModel->whereIn('id_plan', $planIds)
-    *                                       ->where('estado', 'Pendiente')
-     *                                      ->orderBy('fecha_programada', 'ASC')
-      *                                     ->findAll();
-*
- *           // Contamos las completadas para las estadísticas
-  *          $totalCompletadas = $tareaModel->whereIn('id_plan', $planIds)
-   *                                        ->where('estado', 'Completada')
-    *                                       ->countAllResults();
-     *   }
-*
- *       $data = [
-  *          'totalPlanes'      => count($misPlanes),
-   *         'totalPendientes'  => count($tareasPendientes),
-    *        'totalCompletadas' => $totalCompletadas,
-     *       'listaPlanes'      => $misPlanes,
-      *      'listaTareas'      => $tareasPendientes // Se mostrarán en la tabla de tareas
-       * ];
-*
- *       return view('dashboard_paciente', $data);
-  *  } 
-   */ 
+        // 1. Obtener mis planes
+        $misPlanes = $planModel->getPlanesPorPaciente($idPaciente);
+        
+        // 2. Buscar tareas pendientes (Solo de mis planes)
+        $tareasPendientes = [];
+        $totalCompletadas = 0;
+
+        // Extraemos los IDs de los planes para filtrar las tareas
+        $planIds = [];
+        foreach ($misPlanes as $p) {
+            // Manejo robusto de objetos vs arrays
+            $planIds[] = is_object($p) ? $p->id : $p['id'];
+        }
+
+        if (!empty($planIds)) {
+            // Buscamos tareas asociadas a esos planes que estén pendientes
+            $tareasPendientes = $tareaModel->whereIn('id_plan', $planIds)
+                                        ->where('estado', 'Pendiente')
+                                        ->orderBy('fecha_programada', 'ASC')
+                                        ->findAll();
+
+            // Contamos las completadas para las estadísticas
+            $totalCompletadas = $tareaModel->whereIn('id_plan', $planIds)
+                                        ->where('estado', 'Completada')
+                                        ->countAllResults();
+        }
+
+        $data = [
+            'totalPlanes'      => count($misPlanes),
+            'totalPendientes'  => count($tareasPendientes),
+            'totalCompletadas' => $totalCompletadas,
+            'listaPlanes'      => $misPlanes,
+            'listaTareas'      => $tareasPendientes // Se mostrarán en la tabla de tareas
+        ];
+
+    return view('dashboard_paciente', $data);
+    } 
+    
 }

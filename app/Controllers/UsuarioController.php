@@ -3,6 +3,11 @@
 namespace App\Controllers;
 
 use App\Models\UsuarioModel;
+//Consultar los planes en la BD
+use App\Models\PlanModel;
+//permite resolver/mostrar datos del diagnóstico
+use App\Models\DiagnosticoModel;
+
 
 class UsuarioController extends BaseController
 {
@@ -90,4 +95,22 @@ class UsuarioController extends BaseController
     {
         // Actualizar datos propios
     }
+
+        public function misPlanes(){
+            $idPaciente = $this->session->get('id_usuario');
+            if(!$idPaciente){
+                return redirect()->to(base_url('logout'));
+            }
+
+            $planModel = new PlanModel();
+            $diagnosticoModel = new DiagnosticoModel();
+            
+            $data = [
+                'listaPlanes' => $planModel->getPlanesPorPaciente($idPaciente),
+                'listaDiagnosticos' => $diagnosticoModel->findAll(),
+                'soloLectura' => true, //flag opcional para la vista
+            ];
+
+            return view('planes_view', $data);
+        }
 }

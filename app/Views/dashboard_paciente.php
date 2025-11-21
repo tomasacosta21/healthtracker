@@ -72,9 +72,14 @@
                                     <td><?= esc($tarea->fecha_programada) ?></td>
                                     <td><span style="background: #ffedd5; color: #9a3412; padding: 2px 8px; border-radius: 10px; font-size: 0.9em;"><?= esc($tarea->estado) ?></span></td>
                                     <td>
-                                        <!-- Formulario simple para marcar como completada -->
-                                        <form action="<?= base_url('paciente/tareas/cumplir/' . $tarea->id_tarea) ?>" method="post" style="display:inline;">
-                                            <button type="submit" class="btn-primary" style="padding: 5px 10px; font-size: 0.9em;">✅ Completar</button>
+                                        <!-- Formulario mejorado para marcar como completada -->
+                                        <form action="<?= base_url('paciente/tareas/' . $tarea->id_tarea . '/completar') ?>" method="post" style="display:inline;">
+                                            <?= csrf_field() ?>
+                                            <!-- Fecha opcional; si no se envía, el controlador puede usar la hora actual -->
+                                            <input type="datetime-local" name="fecha_realizacion" value="<?= date('Y-m-d\TH:i') ?>" style="margin-right:6px;">
+                                            <!-- Comentarios opcionales -->
+                                            <textarea name="comentarios" placeholder="Comentarios (opcional)" rows="1" style="vertical-align:middle; margin-right:6px; width:180px;"></textarea>
+                                            <button type="submit" class="btn-primary" style="padding:5px 10px; font-size:0.9em;">✅ Completar</button>
                                         </form>
                                     </td>
                                 </tr>
