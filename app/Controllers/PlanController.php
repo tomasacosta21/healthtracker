@@ -10,116 +10,179 @@ class PlanController extends BaseController
     public function index()
     {
         $planModel = new PlanModel();
+        $usuarioModel = new UsuarioModel();
+        $diagnosticoModel = new DiagnosticoModel();
+        $tipoTareaModel = new \App\Models\TipoTareaModel();
+
         $rol = $this->session->get('nombre_rol');
         $userId = $this->session->get('id_usuario');
 
         if ($rol === 'Paciente') {
             $listaPlanes = $planModel->getPlanesPorPaciente($userId);
+            $misPacientes = [];
         } elseif ($rol === 'Profesional') {
             $listaPlanes = $planModel->getPlanesPorProfesional($userId);
+            $misPacientes = $usuarioModel->getPacientesPorProfesional($userId);
         } else {
             $listaPlanes = $planModel->findAll();
+            $misPacientes = $usuarioModel->getPacientes();
         }
 
         $data = [
-            'listaPlanes' => $listaPlanes,
-            'listaDiagnosticos' => (new DiagnosticoModel())->findAll(),
-            'soloLectura' => ($rol === 'Paciente'), // Solo lectura para pacientes
+            'totalPacientes'    => is_array($misPacientes) ? count($misPacientes) : (is_object($misPacientes) ? count((array)$misPacientes) : (is_countable($misPacientes) ? count($misPacientes) : 0)),
+            'planesActivos'     => is_countable($listaPlanes) ? count($listaPlanes) : 0,
+            'listaPlanes'       => $listaPlanes,
+            'listaPacientes'    => $misPacientes,
+            'todosLosPacientes' => $usuarioModel->getPacientes(),
+            'listaDiagnosticos' => $diagnosticoModel->findAll(),
+            'listaTiposTarea'   => $tipoTareaModel->findAll(),
+            'soloLectura'       => ($rol === 'Paciente'),
         ];
 
-        return view('planes_view', $data);
+        return view('dashboard_profesional', $data);
     }
 
     public function gestionPlanes()
     {
         $planModel = new PlanModel();
+        $usuarioModel = new UsuarioModel();
         $diagnosticoModel = new DiagnosticoModel();
+        $tipoTareaModel = new \App\Models\TipoTareaModel();
 
         $session = session();
         $userId = $session->get('id_usuario');
         $userRole = $session->get('nombre_rol');
 
         if ($userRole === 'Paciente') {
-            // Obtener solo los planes del paciente actual
             $listaPlanes = $planModel->getPlanesPorPaciente($userId);
+            $misPacientes = [];
         } elseif ($userRole === 'Profesional') {
-            // Obtener solo los planes asignados al profesional actual
             $listaPlanes = $planModel->getPlanesPorProfesional($userId);
+            $misPacientes = $usuarioModel->getPacientesPorProfesional($userId);
         } else {
-            // Obtener todos los planes para otros roles (por ejemplo, administrador)
             $listaPlanes = $planModel->findAll();
+            $misPacientes = $usuarioModel->getPacientes();
         }
 
-        // Lista de diagnósticos para llenar selects en formularios
-        $listaDiagnosticos = $diagnosticoModel->findAll();
-
         $data = [
+            'totalPacientes'    => is_array($misPacientes) ? count($misPacientes) : (is_object($misPacientes) ? count((array)$misPacientes) : (is_countable($misPacientes) ? count($misPacientes) : 0)),
+            'planesActivos'     => is_countable($listaPlanes) ? count($listaPlanes) : 0,
             'listaPlanes'       => $listaPlanes,
-            'listaDiagnosticos' => $listaDiagnosticos,
-        ];
-        
-        return view('planes_view', $data);
-    }
-
-    public function consultaPlan()
-    {
-        $planModel = new PlanModel();
-        $diagnosticoModel = new DiagnosticoModel();
-
-        $session = session();
-        $userId = $session->get('id_usuario');
-        $userRole = $session->get('nombre_rol');
-
-        if ($userRole === 'Paciente') {
-            // Obtener solo los planes del paciente actual
-            $listaPlanes = $planModel->where('id_paciente', $userId)->findAll();
-        } elseif ($userRole === 'Profesional') {
-            // Obtener solo los planes asignados al profesional actual
-            $listaPlanes = $planModel->where('id_profesional', $userId)->findAll();
-        } else {
-            // Obtener todos los planes para otros roles (por ejemplo, administrador)
-            $listaPlanes = $planModel->findAll();
-        }
-
-        // Lista de diagnósticos para llenar selects en formularios
-        $listaDiagnosticos = $diagnosticoModel->findAll();
-
-        $data = [
-            'listaPlanes'       => $listaPlanes,
-            'listaDiagnosticos' => $listaDiagnosticos,
+            'listaPacientes'    => $misPacientes,
+            'todosLosPacientes' => $usuarioModel->getPacientes(),
+            'listaDiagnosticos' => $diagnosticoModel->findAll(),
+            'listaTiposTarea'   => $tipoTareaModel->findAll(),
         ];
 
-        return view('planes_view', $data);
-
+        return view('dashboard_profesional', $data);
     }
 
-    /**
-     * Mostrar formulario de creación de un plan.
-     * Consideraciones para implementación:
-     * - Debe devolver una vista con datos de apoyo: lista de pacientes, diagnósticos y posibles plantillas.
-     * - Usar el rol de sesión para limitar opciones (ej. si es Profesional, mostrar sólo sus pacientes).
-     * - No realizar escritura en este método (GET únicamente).
-     */
     public function create()
     {
-        // TODO: Implementar: preparar $data y devolver la vista del formulario
+        // El formulario de creación de Plan está embebido en el dashboard profesional
+        // (como modal). Para evitar renderizar la vista `dashboard_profesional` con
+        // variables incompletas desde aquí, redirigimos al dashboard principal
+        // que ya arma todos los datos necesarios.
+        return redirect()->to(base_url('profesional'));
     }
 
     /**
      * Guardar un nuevo plan (POST).
-     * Consideraciones para implementación:
-     * - Validar entrada con el servicio de Validation (reglas claras para nombre, fecha, id_paciente, id_profesional, id_diagnostico).
-     * - Proteger contra CSRF (CodeIgniter lo maneja si está habilitado en la app).
-     * - Comprobar autorización: el profesional logueado sólo puede crear planes para sus pacientes.
-     * - Usar transacciones si se van a insertar varias tablas relacionadas (plan + tareas).
-     * - Sanitizar/escapar datos antes de guardarlos (aunque el modelo usa bindings).
-     * - En caso de error, devolver con `redirect()->back()->withInput()->with('errors', $validation->getErrors())`.
-     * - En caso de éxito, usar `session()->setFlashdata()` y redirigir al listado o a la vista del plan.
      */
     public function store()
     {
-        // TODO: Implementar persistencia: $this->request->getPost('campo') -> validar -> $planModel->insert([...])
+        // 1. Reglas de validación
+        // Nota: 'nombre_diagnostico' valida contra la tabla 'diagnosticos', campo 'nombre'
+        $rules = [
+            'nombre'             => 'required|min_length[5]|max_length[255]',
+            'fecha_inicio'       => 'required|valid_date',
+            'fecha_fin'          => 'permit_empty|valid_date',
+            'id_paciente'        => 'required|is_natural_no_zero',
+            'nombre_diagnostico' => 'required|not_in_list[Seleccionar...]', // Debe ser el string del nombre
+        ];
+
+        // Mensajes personalizados si hacen falta
+        $errors = [
+            'nombre_diagnostico' => [
+                'required' => 'Debe seleccionar un diagnóstico válido.'
+            ]
+        ];
+
+        // 2. Validar entrada
+        if (! $this->validate($rules, $errors)) {
+            // Si la petición viene de un modal (AJAX/JSON) en el dashboard
+            if ($this->request->isAJAX()) {
+                 return $this->response->setJSON([
+                     'status' => 'error', 
+                     'errors' => $this->validator->getErrors()
+                 ]);
+            }
+            // Retorno clásico
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $usuarioModel = new UsuarioModel();
+        $planModel = new PlanModel();
+        $db = \Config\Database::connect();
+        
+        $currentUserId = session()->get('id_usuario');
+        $idPacientePost = $this->request->getPost('id_paciente');
+
+        // 3. Verificaciones de Lógica de Negocio (Integridad de datos)
+        
+        // A) Validar que el paciente exista y tenga el rol correcto
+        $paciente = $usuarioModel->find($idPacientePost);
+        
+        if (!$paciente || $paciente['nombre_rol'] !== 'Paciente') {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'El usuario seleccionado no es un paciente.']);
+            }
+            return redirect()->back()->withInput()->with('error', 'El usuario seleccionado no es válido.');
+        }
+
+        // 4. Guardado con Transacción
+        try {
+            $db->transStart();
+
+            $dataPlan = [
+                'nombre'             => $this->request->getPost('nombre'),
+                'descripcion'        => $this->request->getPost('descripcion'),
+                'id_profesional'     => $currentUserId, // FK a usuarios
+                'id_paciente'        => $idPacientePost, // FK a usuarios
+                'nombre_diagnostico' => $this->request->getPost('nombre_diagnostico'), // FK a diagnosticos (VARCHAR)
+                'fecha_inicio'       => $this->request->getPost('fecha_inicio'),
+                'fecha_fin'          => $this->request->getPost('fecha_fin'),
+            ];
+
+            $planModel->insert($dataPlan);
+            
+            // Si quisieras guardar tareas aquí, irían dentro de este bloque transaccional.
+
+            $db->transComplete();
+
+        } catch (\Throwable $e) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
+            }
+            return redirect()->back()->withInput()->with('error', 'Error del sistema al guardar.');
+        }
+
+        // 5. Verificar estado final
+        if ($db->transStatus() === false) {
+             if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'No se pudo completar la transacción.']);
+            }
+            return redirect()->back()->withInput()->with('error', 'No se pudo guardar el plan.');
+        }
+
+        // 6. Éxito
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 'success', 'message' => 'Plan creado correctamente.']);
+        }
+        
+        return redirect()->to('/dashboard/profesional')->with('success', 'Plan creado correctamente.');
     }
+
 
     /**
      * Mostrar detalle de un plan.
@@ -162,9 +225,33 @@ class PlanController extends BaseController
             return view('planes/detalle', $data);
         } else {
             // Fallback: mostrar en la vista de listado pero con solo este plan
-            $data['listaPlanes'] = [$plan];
-            $data['listaDiagnosticos'] = (new DiagnosticoModel())->findAll();
-            return view('planes_view', $data);
+            $usuarioModel = new UsuarioModel();
+            $tipoTareaModel = new \App\Models\TipoTareaModel();
+
+            // Calcular lista de pacientes según rol como en index()/gestionPlanes()
+            if ($rol === 'Paciente') {
+                $misPacientes = [];
+            } elseif ($rol === 'Profesional') {
+                $misPacientes = $usuarioModel->getPacientesPorProfesional($userId);
+            } else {
+                $misPacientes = $usuarioModel->getPacientes();
+            }
+
+            $fullData = [
+                'totalPacientes'    => is_array($misPacientes) ? count($misPacientes) : (is_object($misPacientes) ? count((array)$misPacientes) : (is_countable($misPacientes) ? count($misPacientes) : 0)),
+                'planesActivos'     => 1,
+                'listaPlanes'       => [$plan],
+                'listaPacientes'    => $misPacientes,
+                'todosLosPacientes' => $usuarioModel->getPacientes(),
+                'listaDiagnosticos' => (new DiagnosticoModel())->findAll(),
+                'listaTiposTarea'   => $tipoTareaModel->findAll(),
+                'soloLectura'       => ($rol === 'Paciente'),
+                // Mantener datos del plan y sus tareas por si la vista los usa
+                'plan'              => $plan,
+                'tareas'            => $tareas,
+            ];
+
+            return view('dashboard_profesional', $fullData);
         }
     }
 
@@ -177,7 +264,46 @@ class PlanController extends BaseController
      */
     public function edit($id = null)
     {
-        // TODO: Implementar: preparar $data para el formulario de edición
+       $planModel = new PlanModel();
+        $plan = $planModel->find($id);
+
+        if (!$plan) {
+            return redirect()->to(base_url('profesional'))->with('error', 'El plan solicitado no existe.');
+        }
+
+        // Autorización: Verificar si el usuario tiene permiso para editar
+        $currentUserId = session()->get('id_usuario');
+        $currentUserRol = session()->get('nombre_rol'); // Ajustado a 'nombre_rol' según tu index()
+
+        // Regla: Solo el profesional creador o un admin pueden editar
+        if ($currentUserRol === 'Profesional' && $plan['id_profesional'] != $currentUserId) {
+            return redirect()->to('/planes')->with('error', 'No tienes permiso para editar este plan.');
+        }
+        
+        // Los pacientes no deberían editar sus propios planes médicos (regla de negocio lógica)
+        if ($currentUserRol === 'Paciente') {
+            return redirect()->to('/planes')->with('error', 'Acción no autorizada.');
+        }
+
+        $usuarioModel = new UsuarioModel();
+        $diagnosticoModel = new DiagnosticoModel();
+
+        // Obtener listas para los selects
+        // NOTA: Al no existir tabla intermedia profesional_paciente, traemos todos los pacientes.
+        $pacientes = $usuarioModel->where('nombre_rol', 'Paciente')->findAll();
+        $diagnosticos = $diagnosticoModel->findAll();
+
+        $data = [
+            'title'        => 'Editar Plan',
+            'plan'         => $plan,
+            'pacientes'    => $pacientes,
+            'diagnosticos' => $diagnosticos,
+            'validation'   => session()->getFlashdata('validation')
+        ];
+
+        // Retornamos la misma vista de creación pero con datos, o una vista 'edit' específica
+        // Si usas modales como en tu dashboard, este método sirve para vistas completas de respaldo
+            return redirect()->to(base_url('profesional'))->with('info', 'Editar en modal desde el dashboard.');
     }
 
     /**
@@ -191,7 +317,48 @@ class PlanController extends BaseController
      */
     public function update($id = null)
     {
-        // TODO: Implementar: validar input, $planModel->update($id, $data)
+       $planModel = new PlanModel();
+        $plan = $planModel->find($id);
+
+        if (!$plan) {
+            return redirect()->back()->with('error', 'Plan no encontrado.');
+        }
+
+        // Autorización
+        $currentUserId = session()->get('id_usuario');
+        $currentUserRol = session()->get('nombre_rol');
+
+        if ($currentUserRol === 'Profesional' && $plan['id_profesional'] != $currentUserId) {
+            return redirect()->back()->with('error', 'No tienes autorización para modificar este plan.');
+        }
+
+        // Reglas de validación (Similares a store, pero id_paciente/profesional raramente cambian)
+        $rules = [
+            'nombre'         => 'required|min_length[5]',
+            'fecha_inicio'   => 'required|valid_date',
+            'id_diagnostico' => 'required', // El diagnóstico podría cambiar
+            'estado'         => 'permit_empty' // Si se gestiona estado desde aquí
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        $dataUpdate = [
+            'nombre'          => $this->request->getPost('nombre'),
+            'descripcion'     => $this->request->getPost('descripcion'),
+            'fecha_inicio'    => $this->request->getPost('fecha_inicio'),
+            'fecha_fin'       => $this->request->getPost('fecha_fin'), // Agregado: permite cerrar el plan
+            'id_diagnostico'  => $this->request->getPost('id_diagnostico'),
+            // id_paciente y id_profesional no se actualizan por seguridad en este flujo
+        ];
+
+        // UPDATE simple. No requiere transacción compleja si solo tocamos la tabla planes.
+        if ($planModel->update($id, $dataUpdate)) {
+            return redirect()->to(base_url('profesional'))->with('success', 'Plan actualizado correctamente.');
+        } else {
+            return redirect()->back()->withInput()->with('error', 'No se pudo actualizar el registro.');
+        }
     }
 
     /**
@@ -205,12 +372,48 @@ class PlanController extends BaseController
      */
     public function delete($id = null)
     {
-        // TODO: Implementar: comprobar existencia, permisos y eliminar
+        $planModel = new PlanModel();
+        $plan = $planModel->find($id);
+
+        if (!$plan) {
+            // Respuesta compatible con AJAX si el dashboard lo usa, o redirect
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Plan no encontrado']);
+            }
+            return redirect()->back()->with('error', 'Plan no encontrado.');
+        }
+
+        // Autorización
+        $currentUserId = session()->get('id_usuario');
+        $currentUserRol = session()->get('nombre_rol');
+
+        if ($currentUserRol === 'Profesional' && $plan['id_profesional'] != $currentUserId) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'No autorizado']);
+            }
+            return redirect()->back()->with('error', 'No tienes permiso para eliminar este plan.');
+        }
+
+        // Eliminación
+        // NOTA: Tu DB tiene "ON DELETE CASCADE" en la tabla tareas (FK id_plan).
+        // Por lo tanto, al borrar el plan, las tareas se borran solas. No hace falta transacción manual.
+        
+        if ($planModel->delete($id)) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'success', 'message' => 'Plan eliminado correctamente']);
+            }
+            return redirect()->to(base_url('profesional'))->with('success', 'Plan eliminado correctamente.');
+        } else {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Error al eliminar']);
+            }
+            return redirect()->back()->with('error', 'Error al eliminar el plan.');
+        }
     }
 
-        public function new()
+    public function new()
     {
-        // Form crear plan (solo profesional)
+       return $this->create();
     }
 }
 ?>

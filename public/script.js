@@ -80,8 +80,10 @@ function openModal(entity, mode, element = null) {
 
     if (mode === 'create') {
         modalTitle.textContent = `Nuevo ${entity}`;
-        form.action = `${baseUrl}/${entity}/crear`; // ej. /profesional/planes/crear
-        
+        // Usar la ruta RESTful del resource: POST to /profesional/planes
+        form.action = `${baseUrl}/${entity}`;
+        document.getElementById('form-method').value = 'POST';
+
         const idInput = form.querySelector('input[name="id"]');
         if (idInput) idInput.value = '';
 
@@ -91,7 +93,9 @@ function openModal(entity, mode, element = null) {
         // --- ¡LÓGICA DE EDICIÓN SIN JSON! ---
         const id = element.dataset.id;
         modalTitle.textContent = `Editar ${entity}`;
-        form.action = `${baseUrl}/${entity}/actualizar/${id}`; // ej. /profesional/planes/actualizar/1
+        // Usar la ruta RESTful de update: POST con spoofing _method=PUT to /profesional/planes/{id}
+        form.action = `${baseUrl}/${entity}/${id}`;
+        document.getElementById('form-method').value = 'PUT';
 
         // 1. Leer todos los atributos 'data-*' del botón
         const data = element.dataset;
@@ -142,7 +146,7 @@ function deleteRecord(entity, id) {
     // 1. Crear un formulario temporal
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `${baseUrl}/${entity}/eliminar/${id}`;
+    form.action = `${baseUrl}/${entity}/${id}`;
     
     // (Opcional) Añadir token CSRF si lo estás usando
     // const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -152,10 +156,103 @@ function deleteRecord(entity, id) {
     // csrfInput.value = csrfToken;
     // form.appendChild(csrfInput);
 
-    // 2. Añadirlo al body y enviarlo
+    // 2. Añadir input _method=DELETE para method spoofing
+    const methodInput = document.createElement('input');
+    methodInput.type = 'hidden';
+    methodInput.name = '_method';
+    methodInput.value = 'DELETE';
+    form.appendChild(methodInput);
+
+    // (Opcional) Añadir token CSRF si lo estás usando y conoces el nombre del campo
+    // const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    // const csrfInput = document.createElement('input'); csrfInput.type='hidden'; csrfInput.name='csrf_token_name'; csrfInput.value=csrfToken; form.appendChild(csrfInput);
+
+    // 3. Añadirlo al body y enviarlo
     document.body.appendChild(form);
     form.submit();
     
     // 3. El backend de CodeIgniter procesará esto y (probablemente)
     // hará un `return redirect()->back();`
 }
+
+/* ====== Submodal y gestión de tareas en cliente para el formulario de Plan ====== */
+
+function openTaskCreator() {
+    const modal = document.getElementById('task-creator-modal');
+    if (!modal) return;
+    // Reset fields
+    const desc = document.getElementById('task-descripcion');
+    const fecha = document.getElementById('task-fecha');
+    const tipo = document.getElementById('task-tipo');
+    if (desc) desc.value = '';
+    if (fecha) fecha.value = '';
+    if (tipo) tipo.value = '';
+    modal.classList.add('active');
+}
+
+function closeTaskCreator() {
+    const modal = document.getElementById('task-creator-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+}
+
+function addTaskToPlan() {
+    const desc = document.getElementById('task-descripcion').value.trim();
+    const fecha = document.getElementById('task-fecha').value;
+    const tipo = document.getElementById('task-tipo').value.trim();
+
+    if (!desc) {
+        alert('La descripción de la tarea es obligatoria.');
+        return;
+    }
+
+    const key = 't' + Date.now() + Math.floor(Math.random() * 999);
+
+    // Añadir a la lista visible
+    const list = document.getElementById('plan-tasks-list');
+    const li = document.createElement('li');
+    li.dataset.taskKey = key;
+    li.innerHTML = `<strong>${escapeHtml(desc)}</strong> <br><small>${fecha ? fecha.replace('T',' ') : ''} ${tipo ? ' - ' + escapeHtml(tipo) : ''}</small> <button type="button" onclick="removeTask('${key}')" class="btn-delete" style="margin-left:8px;">Eliminar</button>`;
+    list.appendChild(li);
+
+    // Añadir inputs hidden al formulario principal
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    const inpDesc = document.createElement('input'); inpDesc.type = 'hidden'; inpDesc.name = `tareas[${key}][descripcion]`; inpDesc.value = desc; inpDesc.dataset.taskKey = key;
+    const inpFecha = document.createElement('input'); inpFecha.type = 'hidden'; inpFecha.name = `tareas[${key}][fecha_programada]`; inpFecha.value = fecha; inpFecha.dataset.taskKey = key;
+    const inpTipo = document.createElement('input'); inpTipo.type = 'hidden'; inpTipo.name = `tareas[${key}][tipo]`; inpTipo.value = tipo; inpTipo.dataset.taskKey = key;
+
+    inputsContainer.appendChild(inpDesc);
+    inputsContainer.appendChild(inpFecha);
+    inputsContainer.appendChild(inpTipo);
+
+    closeTaskCreator();
+}
+
+function removeTask(key) {
+    // Remove visible li
+    const list = document.getElementById('plan-tasks-list');
+    const items = list.querySelectorAll('li');
+    items.forEach(li => { if (li.dataset.taskKey === key) li.remove(); });
+
+    // Remove hidden inputs
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    const hiddenInputs = inputsContainer.querySelectorAll('input');
+    hiddenInputs.forEach(i => { if (i.dataset.taskKey === key) i.remove(); });
+}
+
+function escapeHtml(text) {
+    return String(text).replace(/[&<>\"]+/g, function (s) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]);
+    });
+}
+
+// Expose functions globally so inline handlers in views keep working when script loaded as module
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.deleteRecord = deleteRecord;
+window.filterTable = filterTable;
+window.openTaskCreator = openTaskCreator;
+window.closeTaskCreator = closeTaskCreator;
+window.addTaskToPlan = addTaskToPlan;
+window.removeTask = removeTask;
+window.addNewTaskForPlan = openTaskCreator; // legacy shim used in tasks modal
