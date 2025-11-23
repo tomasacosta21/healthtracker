@@ -246,6 +246,55 @@ function escapeHtml(text) {
     });
 }
 
+// Escuchar el envío del formulario
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('entity-form');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // 1. Evitar la recarga de la página
+
+            const formData = new FormData(this);
+            const url = this.action;
+            
+            // Limpiar errores previos
+            // (Aquí podrías borrar mensajes de error viejos del DOM)
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // 2. Importante: Avisar a CI4 que es AJAX
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // 3. Éxito: Cerrar modal y recargar o actualizar tabla
+                    alert(data.message);
+                    closeModal('modal');
+                    location.reload(); // Recargamos para ver el nuevo dato
+                } else {
+                    // 4. Error: Mostrar errores sin cerrar el modal
+                    let errorMsg = "Errores de validación:\n";
+                    if (data.errors) {
+                        for (const [field, msg] of Object.entries(data.errors)) {
+                            errorMsg += `- ${msg}\n`;
+                        }
+                    } else {
+                        errorMsg += data.message || 'Error desconocido';
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Ocurrió un error de red.");
+            });
+        });
+    }
+});
+
 // Expose functions globally so inline handlers in views keep working when script loaded as module
 window.openModal = openModal;
 window.closeModal = closeModal;
