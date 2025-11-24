@@ -1,30 +1,27 @@
+# BASE DE DATOS
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 175f511 (cambios)
-script base de datos:
-CREATE DATABASE IF NOT EXISTS healthtrackerV1;
+DROP DATABASE IF EXISTS healthtrackerV1;
+CREATE DATABASE healthtrackerV1;
 USE healthtrackerV1;
 
 -- 1. Tablas de catálogo
 CREATE TABLE roles (
     nombre VARCHAR(100) NOT NULL PRIMARY KEY
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE diagnosticos (
     nombre VARCHAR(255) NOT NULL PRIMARY KEY,
     descripcion TEXT
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE medicamento (
     nombre VARCHAR(255) NOT NULL PRIMARY KEY
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE tipos_tarea (
     id_tipo_tarea INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL UNIQUE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- 2. Tablas con dependencias
 CREATE TABLE usuarios (
@@ -35,10 +32,11 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     nombre_rol VARCHAR(100),
     descripcion_perfil TEXT,
+    -- CORRECCIÓN: Ya estaba bien, permite cambiar nombre del rol y si se borra el rol, el usuario queda "sin rol" (NULL)
     FOREIGN KEY (nombre_rol) REFERENCES roles(nombre)
         ON UPDATE CASCADE
         ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE planes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,10 +47,17 @@ CREATE TABLE planes (
     nombre_diagnostico VARCHAR(255),
     fecha_inicio DATE,
     fecha_fin DATE,
-    FOREIGN KEY (id_profesional) REFERENCES usuarios(id_usuario),
-    FOREIGN KEY (id_paciente) REFERENCES usuarios(id_usuario),
+    -- Integridad para usuarios (IDs numéricos raramente cambian, RESTRICT es seguro por defecto)
+    FOREIGN KEY (id_profesional) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT,
+    FOREIGN KEY (id_paciente) REFERENCES usuarios(id_usuario) ON DELETE RESTRICT,
+    
+    -- CORRECCIÓN CRÍTICA: Diagnóstico es VARCHAR.
+    -- Si corriges "Gripe" a "Influenza" en la tabla diagnosticos,
+    -- esto actualizará automáticamente todos los planes relacionados.
     FOREIGN KEY (nombre_diagnostico) REFERENCES diagnosticos(nombre)
-);
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT -- No permite borrar un diagnóstico si hay planes activos usándolo
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE tareas (
     id_tarea INT AUTO_INCREMENT PRIMARY KEY,
@@ -65,19 +70,105 @@ CREATE TABLE tareas (
     estado VARCHAR(50) DEFAULT 'Pendiente',
     comentarios_paciente TEXT,
     fecha_realizacion DATETIME,
+    
+    -- CORRECCIÓN: Si se borra un plan, se borran sus tareas (Cascada). Esto estaba bien.
     FOREIGN KEY (id_plan) REFERENCES planes(id) ON DELETE CASCADE,
+    
+    -- Tipos de tarea son catálogo numérico, RESTRICT está bien.
     FOREIGN KEY (id_tipo_tarea) REFERENCES tipos_tarea(id_tipo_tarea)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+COMMIT;
+
+## CARGA DE DATOS EN LA BASE DE DATOS
+USE healthtrackerV1;
+
+-- ========================================================
+-- 1. CARGA DE CATÁLOGOS (Tablas sin dependencias FK)
+-- ========================================================
+
+-- Roles del sistema
+INSERT INTO roles (nombre) VALUES 
+('Administrador'),
+('Profesional'),
+('Paciente');
+
+-- Diagnósticos médicos comunes
+INSERT INTO diagnosticos (nombre, descripcion) VALUES 
+('Diabetes Mellitus Tipo 2', 'Enfermedad crónica que afecta la forma en que el cuerpo procesa el azúcar en sangre.'),
+('Hipertensión Arterial', 'Afección frecuente en la que la fuerza que ejerce la sangre contra las paredes de las arterias es alta.'),
+('Asma Bronquial', 'Afección en la que las vías respiratorias se estrechan e hinchan, lo que puede producir mayor mucosidad.');
+
+-- Medicamentos disponibles
+INSERT INTO medicamento (nombre) VALUES 
+('Metformina 850mg'),
+('Losartán 50mg'),
+('Ibuprofeno 400mg'),
+('Salbutamol Aerosol'),
+('Insulina Glargina');
+
+-- Tipos de tareas para los planes
+INSERT INTO tipos_tarea (nombre) VALUES 
+('Toma de Medicamento'),
+('Actividad Física'),
+('Registro de Signos Vitales'),
+('Cita de Control'),
+('Dieta / Alimentación');
 
 
+-- ========================================================
+-- 2. CARGA DE USUARIOS (Dependen de Roles)
+-- ========================================================
+
+-- NOTA: La contraseña para todos es '123456'.
+-- El hash generado es un ejemplo válido de BCRYPT para pruebas.
+INSERT INTO usuarios (email, nombre, apellido, password, nombre_rol, descripcion_perfil) VALUES 
+-- 1. Administrador
+('admin@healthtracker.com', 'Admin', 'General', '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe.u.E9.p.q.r.s.t.u.v.w.x.y.z.A.B', 'Administrador', 'Superusuario del sistema.'),
+
+-- 2. Profesional (Médico)
+('doctor@healthtracker.com', 'Gregory', 'House', '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe.u.E9.p.q.r.s.t.u.v.w.x.y.z.A.B', 'Profesional', 'Especialista en Medicina Interna y Diagnóstico.'),
+
+-- 3. Paciente 1 (Con Diabetes)
+('pepe@healthtracker.com', 'Pepe', 'Argento', '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe.u.E9.p.q.r.s.t.u.v.w.x.y.z.A.B', 'Paciente', 'Paciente con antecedentes de hiperglucemia.'),
+
+-- 4. Paciente 2 (Con Asma)
+('moni@healthtracker.com', 'Moni', 'Argento', '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe.u.E9.p.q.r.s.t.u.v.w.x.y.z.A.B', 'Paciente', 'Paciente asmática estacional.');
 
 
+-- ========================================================
+-- 3. CARGA DE PLANES (Dependen de Usuarios y Diagnósticos)
+-- ========================================================
+
+INSERT INTO planes (nombre, descripcion, id_profesional, id_paciente, nombre_diagnostico, fecha_inicio, fecha_fin) VALUES 
+-- Plan para Pepe (Diabetes) asignado por Dr. House
+('Control Glucémico Q1 2024', 'Plan inicial para estabilizar niveles de glucosa mediante dieta y medicación oral.', 2, 3, 'Diabetes Mellitus Tipo 2', '2024-01-01', '2024-03-31'),
+
+-- Plan para Moni (Asma) asignado por Dr. House
+('Manejo Crisis Asmática', 'Plan de acción para temporada de otoño.', 2, 4, 'Asma Bronquial', '2024-03-20', '2024-06-20');
 
 
+-- ========================================================
+-- 4. CARGA DE TAREAS (Dependen de Planes y Tipos de Tarea)
+-- ========================================================
+
+-- Tareas para el Plan de Pepe (ID 1)
+INSERT INTO tareas (id_plan, id_tipo_tarea, num_tarea, descripcion, fecha_programada, fecha_fin_programada, estado) VALUES 
+-- Tarea 1: Medicamento
+(1, 1, 1, 'Tomar Metformina 850mg con el desayuno', '2024-01-02 08:00:00', '2024-01-02 08:30:00', 'Pendiente'),
+-- Tarea 2: Registro
+(1, 3, 2, 'Medir glucosa en ayunas y registrar valor', '2024-01-02 07:00:00', '2024-01-02 07:15:00', 'Completada'),
+-- Tarea 3: Ejercicio
+(1, 2, 3, 'Caminata ligera de 30 minutos', '2024-01-02 18:00:00', '2024-01-02 19:00:00', 'Pendiente');
+
+-- Tareas para el Plan de Moni (ID 2)
+INSERT INTO tareas (id_plan, id_tipo_tarea, num_tarea, descripcion, fecha_programada, fecha_fin_programada, estado) VALUES 
+(2, 1, 1, 'Dos disparos de Salbutamol si hay sibilancias', '2024-03-21 09:00:00', '2024-03-21 21:00:00', 'Pendiente');
+
+COMMIT;
 
 
-
-Historias de usuario:
+# Historias de usuario:
 
 HU: CU-01 — Registro de usuario
 Descripción: Como Usuario (Administrador/Profesional/Paciente) quiero registrarme para crear mi cuenta y acceder según mi rol.
@@ -109,10 +200,8 @@ Validaciones de campos y mensajes de confirmación.
 Puntos:  2, 3, 3
 Valor: Control centralizado de usuarios que mejora gobernanza y cumplimiento institucional.
 Riesgo: Medio (consistencia y gobernanza de permisos).
-<<<<<<< HEAD
 
-=======
->>>>>>> 175f511 (cambios)
+
 HU: CU-04 — Restablecer contraseña
 Descripción: Como Usuario quiero restablecer mi contraseña de forma segura sin asistencia manual.
 Criterios de aceptación:
@@ -215,7 +304,7 @@ Puntos: 3
 Valor: 8,5,3
 Riesgo: Bajo (consultas agregadas simples).
 
-<<<<<<< HEAD
+
 HISTORIAS DEL PROYECTO MVP (DEBEN GENERARSE PRIMERO): CU-01, CU-02, CU-03, CU-04, CU-05, CU-05a, CU-07, CU-08, CU-12.
 
 REGLAS A SEGUIR (VITALES):
@@ -223,7 +312,6 @@ REGLAS A SEGUIR (VITALES):
 1. Patrón de "experto en conocimiento": Existe un controller por entidad del sistema, el mismo gestiona TODO lo relacionado a la entidad, principalmente ABMC. Los roles consumen dichos controllers para llevar adelante sus funcionalidades.
 2. Rutas explícitas en el archivo Routes.php: Manejo semántico y limpio de las rutas, sencillez de acceso y sin acoplamiento. Los roles pueden consumir distintos controllers según la funcionalidad que llevan a cabo.
 3. Archivo script.js único, que define comportamientos claves y generalizados de las vistas pero nada más. Cada dashboard tendrá un bloque <script></script> que gestionará la lógica propia del dashboard.
-=======
 
 HU: ID
 Descripción:
@@ -231,4 +319,5 @@ Criterios de aceptación:
 Puntos:
 Valor:
 Riesgo:
->>>>>>> 175f511 (cambios)
+
+

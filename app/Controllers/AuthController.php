@@ -141,11 +141,100 @@ class AuthController extends BaseController
         // --- Restablecer contraseña ---
     public function forgotPassword()
     {
-        // Vista para solicitar reinicio de contraseña
+        // Si el usuario ya está logueado, redirigir al dashboard
+        if (session()->get('isLoggedIn')) {
+            return redirect()->to(base_url('dashboard'));
+        }
+
+    // Mostrar vista del formulario
+        return view('auth/forgot-password');
     }
 
-        public function attemptForgotPassword()
+    public function attemptForgotPassword()
     {
-        // Generar token + enviar email
+    $email = $this->request->getPost('email');
+    
+    // Validar que el email esté presente y sea válido
+    $validation = \Config\Services::validation();
+    $validation->setRules([
+        'email' => 'required|valid_email'
+    ]);
+    
+    if (! $validation->run($this->request->getPost())) {
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Por favor, ingresa un email válido.');
     }
+    
+    // Verificar que el usuario exista en la base de datos
+    $usuarioModel = new UsuarioModel();
+    $usuario = $usuarioModel->where('email', $email)->first();
+    
+    // Por seguridad, no revelamos si el email existe o no
+    // Siempre mostramos el mismo mensaje de éxito
+    if (! $usuario) {
+        // Simulamos éxito para no revelar información
+        return redirect()->to(base_url('forgot-password'))
+            ->with('success', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.');
+    }
+    
+    // Inicializar modelo de tokens
+    $tokenModel = new PasswordResetTokenModel();
+    
+    // Invalidar tokens previos del mismo email (solo el más reciente es válido)
+    $tokenModel->invalidarTokensDelEmail($email);
+    
+    // Generar nuevo token (válido por 1 hora)
+    $token = $tokenModel->crearToken($email, 1);
+    
+    if (! $token) {
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Error al generar el token. Por favor, intenta de nuevo.');
+    }
+    
+    // Construir URL de restablecimiento
+    $resetUrl = base_url("reset-password?token={$token}");
+    
+    // Enviar email con el enlace
+    $emailService = \Config\Services::email();
+    
+    $emailService->setFrom('noreply@healthtracker.com', 'HealthTracker');
+    $emailService->setTo($email);
+    $emailService->setSubject('Restablecer tu contraseña - HealthTracker');
+    
+    // Mensaje del email (HTML)
+    $mensaje = "
+    <html>
+    <body style='font-family: Arial, sans-serif;'>
+        <h2>Restablecer Contraseña</h2>
+        <p>Hola {$usuario->nombre},</p>
+        <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace:</p>
+        <p><a href='{$resetUrl}' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Restablecer Contraseña</a></p>
+        <p>O copia y pega este enlace en tu navegador:</p>
+        <p>{$resetUrl}</p>
+        <p><strong>Este enlace expirará en 1 hora.</strong></p>
+        <p>Si no solicitaste este cambio, ignora este email.</p>
+        <hr>
+        <p style='color: #666; font-size: 12px;'>Este es un email automático, por favor no respondas.</p>
+    </body>
+    </html>
+    ";
+    
+    $emailService->setMessage($mensaje);
+    $emailService->setMailType('html');
+    
+    // Intentar enviar el email
+    if ($emailService->send()) {
+        return redirect()->to(base_url('forgot-password'))
+            ->with('success', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.');
+    } else {
+        // Log del error (útil para debugging)
+        log_message('error', 'Error al enviar email de restablecimiento: ' . $emailService->printDebugger());
+        
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Error al enviar el email. Por favor, intenta de nuevo más tarde.');
+    }
+}
 }
