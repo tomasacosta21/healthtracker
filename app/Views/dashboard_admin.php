@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - HealthTracker</title>
     <link rel="stylesheet" href="<?= base_url('styles.css') ?>">
 </head>
+
 <body>
     <aside class="sidebar">
         <h1>HealthTracker</h1>
         <nav>
             <a href="<?= base_url('admin#dashboard-admin') ?>" class="nav-btn active">Dashboard</a>
             <a href="<?= base_url('admin#gestion-usuarios') ?>" class="nav-btn">Administración</a>
-            <a href="<?= base_url('planes.html') ?>" class="nav-btn">Planes</a>
+            <button onclick="window.location.href='<?= base_url('logout') ?>'" class="nav-btn" style="margin-top: auto; background-color: #dc2626;">Cerrar Sesión</button>
         </nav>
     </aside>
 
@@ -69,7 +71,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach($usuariosPorRol as $rol): ?>
+                        <?php foreach ($usuariosPorRol as $rol): ?>
                             <?php $porcentaje = ($totalUsuarios > 0) ? ($rol->cantidad / $totalUsuarios) * 100 : 0; ?>
                             <tr>
                                 <td><?= esc($rol->nombre_rol) ?></td>
@@ -89,13 +91,13 @@
                 <h3 style="font-size: 24px; margin-bottom: 20px;">Actividad Reciente del Sistema</h3>
                 <table id="actividad-table">
                     <thead>
-            <meta name="base-url" content="<?= base_url() ?>">
-            <meta name="csrf-token" content="<?= csrf_hash() ?>">
-            <script type="module" src="<?= base_url('js/main.js') ?>"></script>
-                            <th>Usuario</th>
-                            <th>Acción</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
+                        <meta name="base-url" content="<?= base_url() ?>">
+                        <meta name="csrf-token" content="<?= csrf_hash() ?>">
+                        <script type="module" src="<?= base_url('js/main.js') ?>"></script>
+                        <th>Usuario</th>
+                        <th>Acción</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -242,74 +244,74 @@
 
             <!-- Modales Editar (uno por usuario) -->
             <?php if (! empty($usuarios)): foreach ($usuarios as $usuario): ?>
-                <?php $id = isset($usuario->id_usuario) ? $usuario->id_usuario : (isset($usuario['id_usuario']) ? $usuario['id_usuario'] : null); ?>
-                <div id="modal-edit-<?= $id ?>" class="modal-target">
-                    <div class="modal-content">
-                        <a href="#" class="close-btn">×</a>
-                        <h3>Editar Usuario</h3>
+                    <?php $id = isset($usuario->id_usuario) ? $usuario->id_usuario : (isset($usuario['id_usuario']) ? $usuario['id_usuario'] : null); ?>
+                    <div id="modal-edit-<?= $id ?>" class="modal-target">
+                        <div class="modal-content">
+                            <a href="#" class="close-btn">×</a>
+                            <h3>Editar Usuario</h3>
 
-                        <?php if (session()->getFlashdata('errors')): ?>
-                            <div class="alert alert-error">
-                                <ul>
-                                    <?php foreach (session()->getFlashdata('errors') as $error): ?>
-                                        <li><?= esc($error) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
-                        <?php endif; ?>
+                            <?php if (session()->getFlashdata('errors')): ?>
+                                <div class="alert alert-error">
+                                    <ul>
+                                        <?php foreach (session()->getFlashdata('errors') as $error): ?>
+                                            <li><?= esc($error) ?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
 
-                        <form action="<?= base_url('admin/usuarios/' . $id) ?>" method="POST">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="_method" value="PUT">
+                            <form action="<?= base_url('admin/usuarios/' . $id) ?>" method="POST">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="_method" value="PUT">
 
-                            <div class="form-group">
-                                <label>Email *</label>
-                                <input type="email" name="email" value="<?= old('email', $usuario->email ?? $usuario['email']) ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nombre *</label>
-                                <input type="text" name="nombre" value="<?= old('nombre', $usuario->nombre ?? $usuario['nombre']) ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Apellido *</label>
-                                <input type="text" name="apellido" value="<?= old('apellido', $usuario->apellido ?? $usuario['apellido']) ?>" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Contraseña <small>(Dejar en blanco para mantener la actual)</small></label>
-                                <input type="password" name="password">
-                            </div>
-                            <div class="form-group">
-                                <label>Confirmar Contraseña</label>
-                                <input type="password" name="password_confirm">
-                            </div>
-                            <div class="form-group">
-                                <label>Rol *</label>
-                                <select name="nombre_rol" required>
-                                    <option value="">Seleccione un rol</option>
-                                    <option value="Administrador" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Administrador' ? 'selected' : '' ?>>Administrador</option>
-                                    <option value="Profesional" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Profesional' ? 'selected' : '' ?>>Profesional</option>
-                                    <option value="Paciente" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Paciente' ? 'selected' : '' ?>>Paciente</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Descripción del Perfil</label>
-                                <textarea name="descripcion_perfil"><?= old('descripcion_perfil', $usuario->descripcion_perfil ?? $usuario['descripcion_perfil']) ?></textarea>
-                            </div>
+                                <div class="form-group">
+                                    <label>Email *</label>
+                                    <input type="email" name="email" value="<?= old('email', $usuario->email ?? $usuario['email']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre *</label>
+                                    <input type="text" name="nombre" value="<?= old('nombre', $usuario->nombre ?? $usuario['nombre']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Apellido *</label>
+                                    <input type="text" name="apellido" value="<?= old('apellido', $usuario->apellido ?? $usuario['apellido']) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Contraseña <small>(Dejar en blanco para mantener la actual)</small></label>
+                                    <input type="password" name="password">
+                                </div>
+                                <div class="form-group">
+                                    <label>Confirmar Contraseña</label>
+                                    <input type="password" name="password_confirm">
+                                </div>
+                                <div class="form-group">
+                                    <label>Rol *</label>
+                                    <select name="nombre_rol" required>
+                                        <option value="">Seleccione un rol</option>
+                                        <option value="Administrador" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Administrador' ? 'selected' : '' ?>>Administrador</option>
+                                        <option value="Profesional" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Profesional' ? 'selected' : '' ?>>Profesional</option>
+                                        <option value="Paciente" <?= old('nombre_rol', $usuario->nombre_rol ?? $usuario['nombre_rol']) == 'Paciente' ? 'selected' : '' ?>>Paciente</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Descripción del Perfil</label>
+                                    <textarea name="descripcion_perfil"><?= old('descripcion_perfil', $usuario->descripcion_perfil ?? $usuario['descripcion_perfil']) ?></textarea>
+                                </div>
 
-                            <div class="form-actions">
-                                <a class="btn-cancel" href="#">Cancelar</a>
-                                <button type="submit" class="btn-save">Guardar Cambios</button>
-                            </div>
-                        </form>
+                                <div class="form-actions">
+                                    <a class="btn-cancel" href="#">Cancelar</a>
+                                    <button type="submit" class="btn-save">Guardar Cambios</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            <?php endforeach; endif; ?>
+            <?php endforeach;
+            endif; ?>
         </div>
     </main>
 
     <script src="script.js"></script>
     <script>
-        
         function loadDashboard() {
             // Actualizar estadísticas
             document.getElementById('total-usuarios').textContent = adminData.usuarios.length;
@@ -323,7 +325,7 @@
             adminData.usuarios.forEach(u => {
                 roleStats[u.rol] = (roleStats[u.rol] || 0) + 1;
             });
-            
+
             const usuariosRolTable = document.getElementById('usuarios-rol-table').querySelector('tbody');
             usuariosRolTable.innerHTML = '';
             Object.entries(roleStats).forEach(([rol, cantidad]) => {
@@ -391,44 +393,53 @@
     </script>
     <!-- Scroll-spy ligero: marca sección activa en el sidebar según scroll (progresive enhancement) -->
     <script>
-    (function(){
-        // Encuentra enlaces del sidebar que apunten a fragmentos (#id)
-        var navLinks = document.querySelectorAll('.sidebar nav a.nav-btn, .sidebar nav .nav-btn');
-        var tracked = [];
-        navLinks.forEach(function(link){
-            var href = link.getAttribute('href') || '';
-            var m = href.match(/#(.+)$/);
-            if(m){
-                var id = m[1];
-                var sec = document.getElementById(id);
-                if(sec) tracked.push({link: link, section: sec});
-            }
-        });
-
-        if(tracked.length === 0) return; // nothing to do
-
-        function updateActive(){
-            var found = null;
-            for(var i=0;i<tracked.length;i++){
-                var t = tracked[i];
-                var r = t.section.getBoundingClientRect();
-                // visible threshold: section top within top 30% of viewport
-                if(r.top <= window.innerHeight * 0.35 && r.bottom > window.innerHeight * 0.15){
-                    found = t.link; break;
+        (function() {
+            // Encuentra enlaces del sidebar que apunten a fragmentos (#id)
+            var navLinks = document.querySelectorAll('.sidebar nav a.nav-btn, .sidebar nav .nav-btn');
+            var tracked = [];
+            navLinks.forEach(function(link) {
+                var href = link.getAttribute('href') || '';
+                var m = href.match(/#(.+)$/);
+                if (m) {
+                    var id = m[1];
+                    var sec = document.getElementById(id);
+                    if (sec) tracked.push({
+                        link: link,
+                        section: sec
+                    });
                 }
-            }
-            // remove active from all
-            navLinks.forEach(function(l){ l.classList.remove('active'); });
-            if(found) found.classList.add('active');
-        }
+            });
 
-        window.addEventListener('scroll', updateActive, {passive: true});
-        window.addEventListener('resize', updateActive);
-        document.addEventListener('DOMContentLoaded', function(){
-            // small delay to allow layout
-            setTimeout(updateActive, 50);
-        });
-    })();
+            if (tracked.length === 0) return; // nothing to do
+
+            function updateActive() {
+                var found = null;
+                for (var i = 0; i < tracked.length; i++) {
+                    var t = tracked[i];
+                    var r = t.section.getBoundingClientRect();
+                    // visible threshold: section top within top 30% of viewport
+                    if (r.top <= window.innerHeight * 0.35 && r.bottom > window.innerHeight * 0.15) {
+                        found = t.link;
+                        break;
+                    }
+                }
+                // remove active from all
+                navLinks.forEach(function(l) {
+                    l.classList.remove('active');
+                });
+                if (found) found.classList.add('active');
+            }
+
+            window.addEventListener('scroll', updateActive, {
+                passive: true
+            });
+            window.addEventListener('resize', updateActive);
+            document.addEventListener('DOMContentLoaded', function() {
+                // small delay to allow layout
+                setTimeout(updateActive, 50);
+            });
+        })();
     </script>
 </body>
+
 </html>
