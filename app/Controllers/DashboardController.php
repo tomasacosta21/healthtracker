@@ -22,8 +22,8 @@ class DashboardController extends BaseController
         switch ($rol) {
             case 'Administrador':
                 // Redirige a /admin, que llama a $this->adminDashboard() según routes.php
-                return redirect()->to(base_url('admin')); 
-                
+                return redirect()->to(base_url('admin'));
+
             case 'Profesional':
                 // Redirige a /profesional, que llama a $this->profesionalDashboard()
                 return redirect()->to(base_url('profesional'));
@@ -31,7 +31,7 @@ class DashboardController extends BaseController
             case 'Paciente':
                 // Redirige a /paciente, que llama a $this->pacienteDashboard()
                 return redirect()->to(base_url('paciente'));
-                
+
             default:
                 return redirect()->to(base_url('logout'));
         }
@@ -43,30 +43,32 @@ class DashboardController extends BaseController
      */
     public function adminDashboard()
     {
-      //  1. Instanciar modelos necesarios para métricas globales
-    $usuarioModel = new UsuarioModel();
-    $medicamentoModel = new MedicamentoModel();
-    $planModel = new PlanModel();
-    $diagnosticoModel = new DiagnosticoModel();
+        // 1. Instanciar modelos necesarios para métricas globales
+        $usuarioModel = new UsuarioModel();
+        $medicamentoModel = new MedicamentoModel();
+        $planModel = new PlanModel();
+        $diagnosticoModel = new DiagnosticoModel();
 
-      //  2. Recopilar datos
-    $data = [
-        'totalUsuarios'     => $usuarioModel->countAllResults(),
-        'totalMedicamentos' => $medicamentoModel->countAllResults(),
-        'totalPlanes'       => $planModel->countAllResults(),
-            
-          //  Agrupar usuarios por rol para el gráfico/tabla
-        'usuariosPorRol'=> $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
-                                            ->groupBy('nombre_rol')
-                                            ->findAll(),
-            
-         //   Datos adicionales para las tablas del dashboard
-           'actividad'=> [], // Aquí podrías conectar una tabla de logs si la tuvieras
-           'diagnosticos'=> $diagnosticoModel->findAll(5) // Traer 5 de ejemplo
-    ];
+        // 2. Recopilar datos
+        $data = [
+            'totalUsuarios'      => $usuarioModel->countAllResults(),
+            // Lista completa de usuarios para mostrar en el dashboard
+            'usuarios'           => $usuarioModel->findAll(),
+            'totalMedicamentos' => $medicamentoModel->countAllResults(),
+            'totalPlanes'       => $planModel->countAllResults(),
 
-      //  3. Cargar vista
-    return view('dashboard_admin', $data);
+            // Agrupar usuarios por rol para el gráfico/tabla
+            'usuariosPorRol'    => $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
+                ->groupBy('nombre_rol')
+                ->findAll(),
+
+            // Datos adicionales para las tablas del dashboard
+            'actividad'         => [], // Aquí podrías conectar una tabla de logs si la tuvieras
+            'diagnosticos'      => $diagnosticoModel->findAll(5) // Traer 5 de ejemplo
+        ];
+
+        // 3. Cargar vista
+        return view('dashboard_admin', $data);
     }
 
     /**
@@ -81,31 +83,31 @@ class DashboardController extends BaseController
         $diagnosticoModel = new DiagnosticoModel();
         $tareaModel = new TareaModel();
         $tipoTareaModel = new TipoTareaModel(); // Agregado
-        
+
         $idProfesional = $this->session->get('id_usuario');
 
         // 2. Obtener datos
         $misPacientes = $usuarioModel->getPacientesPorProfesional($idProfesional);
         $misPlanes    = $planModel->getPlanesPorProfesional($idProfesional);
-        
+
         // Datos para los formularios (Selects)
         $todosLosPacientes = $usuarioModel->getPacientes(); // Para poder asignar plan a cualquier paciente
         $listaDiagnosticos = $diagnosticoModel->findAll();
         $listaTiposTarea   = $tipoTareaModel->findAll();
 
         // Tareas (Opcional: traer todas o filtrar)
-        $listaTareas = $tareaModel->findAll(); 
+        $listaTareas = $tareaModel->findAll();
 
         $data = [
             // Stats
             'totalPacientes'    => count($misPacientes),
             'planesActivos'     => count($misPlanes),
-            
+
             // Listas para tablas y selects
             'listaPlanes'       => $misPlanes,
-            'listaPacientes'    => $misPacientes,      
-            'todosLosPacientes' => $todosLosPacientes, 
-            'listaDiagnosticos' => $listaDiagnosticos, 
+            'listaPacientes'    => $misPacientes,
+            'todosLosPacientes' => $todosLosPacientes,
+            'listaDiagnosticos' => $listaDiagnosticos,
             'listaTiposTarea'   => $listaTiposTarea,
             'listaTareas'       => $listaTareas
         ];

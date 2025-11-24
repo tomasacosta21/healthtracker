@@ -136,54 +136,21 @@
 
     </main>
 
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Registro</h3>
-                <button class="close-btn" onclick="closeModal('modal')">&times;</button>
-            </div>
-            <form id="entity-form" method="POST">
-                <?= csrf_field() ?>
-                <input type="hidden" name="id" id="form-id"> 
-                <input type="hidden" name="_method" id="form-method" value="POST">
-
-                <div id="form-fields">
-                    </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" onclick="closeModal('modal')">Cancelar</button>
-                    <button type="submit" class="btn-save">Guardar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="tasks-modal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h3 id="tasks-modal-title">Tareas del Plan</h3>
-                <button class="close-btn" onclick="closeModal('tasks-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="tasks-list-container">Cargando...</div>
-                <div class="form-actions" style="justify-content: flex-start; margin-top: 20px;">
-                    <button class="btn-primary" onclick="addNewTaskForPlan()">+ Nueva Tarea</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?= view('planes/modal_form', [
+        'todosLosPacientes' => $todosLosPacientes ?? [],
+        'listaDiagnosticos' => $listaDiagnosticos ?? []
+    ]) ?>
 
     <script>
         window.serverData = {
             pacientes: <?= json_encode($todosLosPacientes ?? []) ?>,
-            diagnosticos: <?= json_encode($listaDiagnosticos ?? []) ?>,
-            // tiposTarea: < ?= json_encode($listaTiposTarea ?? []) ?> // Descomentar si agregas TiposTareaModel
+            diagnosticos: <?= json_encode($listaDiagnosticos ?? []) ?>
         };
     </script>
 
     <meta name="base-url" content="<?= base_url() ?>">
     <meta name="csrf-token" content="<?= csrf_hash() ?>">
-    <script type="module" src="<?= base_url('script.js') ?>"></script>
+    <script src="<?= base_url('script.js') ?>"></script>
 
     <script>
         function scrollToSection(id) {
@@ -193,9 +160,10 @@
             }
         }
 
-        // Helper simple para cerrar modales por ID
+        // Helper simple para cerrar modales por ID (fallback)
         function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
         }
     </script>
 </body>
