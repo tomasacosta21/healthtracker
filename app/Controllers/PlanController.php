@@ -5,6 +5,7 @@ use App\Models\PlanModel;
 use App\Models\UsuarioModel;
 use App\Models\DiagnosticoModel;
 use App\Models\TipoTareaModel;
+use App\Models\TareaModel;
 
 class PlanController extends BaseController
 {
@@ -71,49 +72,37 @@ class PlanController extends BaseController
             'fecha_inicio'       => 'required|valid_date',
             'fecha_fin'          => 'permit_empty|valid_date',
             'id_paciente'        => 'required|is_natural_no_zero',
-            // Quitamos not_in_list para evitar conflictos si el value es ""
             'nombre_diagnostico' => 'required', 
         ];
 
-        $errors = [
-            'nombre_diagnostico' => [
-                'required' => 'Debe seleccionar un diagnóstico válido.'
-            ]
-        ];
-
-        // 2. Validar entrada
-        if (! $this->validate($rules, $errors)) {
+        if (! $this->validate($rules)) {
             if ($this->request->isAJAX()) {
-                 return $this->response->setJSON([
-                     'status' => 'error', 
-                     'errors' => $this->validator->getErrors()
-                 ]);
+                 return $this->response->setJSON(['status' => 'error', 'errors' => $this->validator->getErrors()]);
             }
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $usuarioModel = new UsuarioModel();
         $planModel = new PlanModel();
+        $tareaModel = new TareaModel();
         $db = \Config\Database::connect();
         
         $currentUserId = session()->get('id_usuario');
         $idPacientePost = $this->request->getPost('id_paciente');
 
-        // 3. Verificaciones de Lógica
+        // 3. Verificaciones
         $paciente = $usuarioModel->find($idPacientePost);
         
-        // CORRECCIÓN: Sintaxis de objeto ($paciente->nombre_rol)
         if (!$paciente || $paciente->nombre_rol !== 'Paciente') {
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => 'El usuario seleccionado no es un paciente.']);
-            }
+            if ($this->request->isAJAX()) return $this->response->setJSON(['status' => 'error', 'message' => 'El usuario no es paciente.']);
             return redirect()->back()->withInput()->with('error', 'El usuario seleccionado no es válido.');
         }
 
         // 4. Guardado con Transacción
         try {
-            $db->transStart();
+            $db->transStart(); // Iniciar transacción
 
+            // A. Insertar Plan
             $dataPlan = [
                 'nombre'             => $this->request->getPost('nombre'),
                 'descripcion'        => $this->request->getPost('descripcion'),
@@ -124,33 +113,51 @@ class PlanController extends BaseController
                 'fecha_fin'          => $this->request->getPost('fecha_fin'),
             ];
 
-            $planModel->insert($dataPlan);
-            
-            // (Aquí iría la lógica para guardar tareas si vinieran en el POST)
+            $planId = $planModel->insert($dataPlan, true); // true para retornar ID insertado
 
-            $db->transComplete();
+            // B. Insertar Tareas Iniciales (Requerimiento 1)
+            $tareasRaw = $this->request->getPost('tareas'); // Viene del JS script.js
+            
+            if ($tareasRaw && is_array($tareasRaw)) {
+                $numTarea = 1;
+                foreach ($tareasRaw as $t) {
+                    // Validación mínima de la tarea
+                    if (empty($t['descripcion']) || empty($t['fecha_programada'])) continue;
+
+                    // Lógica simple para Tipo de Tarea (Asumimos ID 1 si no se especifica o si viene texto)
+                    // Lo ideal es que el JS envíe el ID real desde un select.
+                    $tipoTareaId = (isset($t['tipo']) && is_numeric($t['tipo'])) ? $t['tipo'] : 1; 
+
+                    $dataTarea = [
+                        'id_plan'              => $planId,
+                        'id_tipo_tarea'        => $tipoTareaId,
+                        'num_tarea'            => $numTarea++,
+                        'descripcion'          => $t['descripcion'],
+                        'fecha_programada'     => $t['fecha_programada'],
+                        // 'fecha_fin_programada' => ... (opcional)
+                        'estado'               => 'Pendiente'
+                    ];
+                    
+                    $tareaModel->insert($dataTarea);
+                }
+            }
+
+            $db->transComplete(); // Finalizar transacción
 
         } catch (\Throwable $e) {
-            if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
-            }
+            if ($this->request->isAJAX()) return $this->response->setJSON(['status' => 'error', 'message' => 'Error interno: ' . $e->getMessage()]);
             return redirect()->back()->withInput()->with('error', 'Error del sistema al guardar.');
         }
 
-        // 5. Verificar transacción
         if ($db->transStatus() === false) {
-             if ($this->request->isAJAX()) {
-                return $this->response->setJSON(['status' => 'error', 'message' => 'No se pudo completar la transacción.']);
-            }
+             if ($this->request->isAJAX()) return $this->response->setJSON(['status' => 'error', 'message' => 'Falló la transacción.']);
             return redirect()->back()->withInput()->with('error', 'No se pudo guardar el plan.');
         }
 
-        // 6. Éxito
         if ($this->request->isAJAX()) {
-            return $this->response->setJSON(['status' => 'success', 'message' => 'Plan creado correctamente.']);
+            return $this->response->setJSON(['status' => 'success', 'message' => 'Plan y tareas creados correctamente.']);
         }
         
-        // CORRECCIÓN: Redirect en lugar de view() para evitar errores de variables
         return redirect()->to('/profesional')->with('success', 'Plan creado correctamente.');
     }
 

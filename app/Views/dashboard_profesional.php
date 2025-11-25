@@ -84,7 +84,7 @@
                                     <td>#<?= esc($plan->id) ?></td>
                                     <td>
                                         <strong><?= esc($plan->nombre) ?></strong><br>
-                                        <small style="color:#666"><?= esc($plan->descripcion) ?></small>
+                                        <small style="color:#555"><?= esc($plan->descripcion) ?></small>
                                     </td>
                                     <td>ID: <?= esc($plan->id_paciente) ?></td>
                                     <td><?= esc($plan->nombre_diagnostico) ?></td>
@@ -96,6 +96,7 @@
                                         <button class="btn-secondary" onclick="openTasksModal(<?= esc($plan->id) ?>)">Tareas</button>
                                         <button class="btn-edit" onclick="openModal('planes', 'edit', this.closest('tr'))">Editar</button>
                                         <button class="btn-delete" onclick="deleteRecord('planes', <?= esc($plan->id) ?>)">Eliminar</button>
+                                        <button class="btn-view" onclick="openProgressModal(<?= esc($plan->id) ?>)" title="Ver Progreso y Comentarios"> Progreso </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -134,17 +135,52 @@
             </div>
         </div>
 
-    </main>
+        <div id="progress-modal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>Progreso del Plan</h3>
+                <button class="close-btn" onclick="closeModal('progress-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 25px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-weight:600; color:#444;">
+                        <span>Porcentaje completado</span>
+                        <span id="progress-percent-text">0%</span>
+                    </div>
+                    <div style="background-color: #e5e7eb; border-radius: 10px; height: 24px; width: 100%; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                        <div id="progress-bar-fill" style="background-color: #10b981; height: 100%; width: 0%; text-align: center; line-height: 24px; color: white; font-size: 0.85em; font-weight: bold; transition: width 0.6s ease-in-out;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                    <h4 style="margin-bottom: 15px; color: #333;">Detalle de Tareas</h4>
+                    <div id="progress-tasks-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                        <div style="text-align:center; color:#888; padding:20px;">Cargando datos...</div>
+                    </div>
+                </div> 
+            </div>
+            <div class="modal-footer" style="text-align: right; margin-top: 20px;">
+                <button class="btn-cancel" onclick="closeModal('progress-modal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</main>
 
     <?= view('planes/modal_form', [
         'todosLosPacientes' => $todosLosPacientes ?? [],
-        'listaDiagnosticos' => $listaDiagnosticos ?? []
+        'listaDiagnosticos' => $listaDiagnosticos ?? [],
+        'listaTiposTarea'   => $listaTiposTarea ?? []
     ]) ?>
+
+    <?= view('planes/tasks_modal') ?>
 
     <script>
         window.serverData = {
             pacientes: <?= json_encode($todosLosPacientes ?? []) ?>,
             diagnosticos: <?= json_encode($listaDiagnosticos ?? []) ?>
+            , tipos: <?= json_encode($listaTiposTarea ?? []) ?>
+            , role: <?= json_encode(session()->get('nombre_rol') ?? '') ?>
         };
     </script>
 
