@@ -6,6 +6,7 @@
 // Configuración inicial de CSRF para Fetch
 const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
 let csrfToken = csrfTokenMeta ? csrfTokenMeta.content : '';
+let currentPlanId = null;
 
 function scrollToEntity(entity, navElement) {
     const el = document.getElementById(entity);
@@ -218,6 +219,23 @@ function removeTask(key) {
 /* ====== Modal lista Tareas (Ajax) ====== */
 
 function openTasksModal(planId) {
+    currentPlanId = planId; // GUARDAMOS EL ID DEL PLAN
+    
+    // Resetear formulario de nueva tarea
+    const formDiv = document.getElementById('new-task-form');
+    if(formDiv) formDiv.style.display = 'none';
+    
+    // Cargar tipos de tarea en el select del formulario nuevo (si no están cargados)
+    const typeSelect = document.getElementById('new-task-type');
+    if (typeSelect && typeSelect.options.length <= 1 && window.serverData && window.serverData.tipos) {
+        window.serverData.tipos.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id_tipo_tarea;
+            opt.textContent = t.nombre;
+            typeSelect.appendChild(opt);
+        });
+    }
+
     const base = document.querySelector('meta[name="base-url"]').content || '';
     const url = `${base}/profesional/planes/${planId}/tareas`;
 
@@ -241,22 +259,23 @@ function openTasksModal(planId) {
             if (!json.data || json.data.length === 0) {
                 list.innerHTML = '<li class="empty-state" style="padding:12px;color:#666;">No hay tareas para este plan.</li>';
             } else {
+                // Ordenar visualmente por num_tarea si viene del server, o fecha
+                json.data.sort((a, b) => a.num_tarea - b.num_tarea);
+
                 json.data.forEach(t => {
                     const li = document.createElement('li');
                     li.style.padding = '10px';
                     li.style.borderBottom = '1px solid #eee';
                     const tipoNombre = tipoMap[t.id_tipo_tarea] || (t.id_tipo_tarea || 'Tipo N/D');
-                    const fecha = t.fecha_programada ? t.fecha_programada.replace('T',' ') : (t.fecha_programada || 'Sin fecha');
-                    const estado = t.estado || '';
-
+                    const fecha = t.fecha_programada ? t.fecha_programada.replace('T',' ') : 'Sin fecha';
+                    
                     li.innerHTML = `
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
                           <div>
-                            <strong>${escapeHtml(tipoNombre)}:</strong> ${escapeHtml(t.descripcion || '')} <br>
-                            <small style="color:#666">#${t.num_tarea || ''} — ${escapeHtml(fecha)} — <em>${escapeHtml(estado)}</em></small>
+                            <strong>${t.num_tarea}. ${escapeHtml(tipoNombre)}:</strong> ${escapeHtml(t.descripcion || '')} <br>
+                            <small style="color:#666">📅 ${escapeHtml(fecha)} — Estado: <em>${escapeHtml(t.estado)}</em></small>
                           </div>
                           <div style="display:flex; gap:8px;">
-                            <button class="btn-secondary" onclick="markTaskComplete(${t.id_tarea})">Marcar</button>
                             <button class="btn-delete" onclick="deleteTask(${t.id_tarea})">Eliminar</button>
                           </div>
                         </div>
@@ -265,14 +284,72 @@ function openTasksModal(planId) {
                 });
             }
 
-            // Mostrar modal
             const modal = document.getElementById('tasks-modal');
             if (modal) modal.classList.add('active');
         })
         .catch(err => {
             console.error(err);
-            list.innerHTML = '<li style="padding:10px;color:#c00;">Error al solicitar las tareas. Revisa la consola.</li>';
+            list.innerHTML = '<li style="padding:10px;color:#c00;">Error al solicitar las tareas.</li>';
         });
+}
+
+function toggleNewTaskForm() {
+    const form = document.getElementById('new-task-form');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        // Limpiar inputs
+        document.getElementById('new-task-desc').value = '';
+        document.getElementById('new-task-date').value = '';
+        document.getElementById('new-task-type').selectedIndex = 0;
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+function saveNewTask(e) {
+    e.preventDefault();
+    
+    if (!currentPlanId) return alert("Error: ID de plan perdido.");
+
+    const tipo = document.getElementById('new-task-type').value;
+    const desc = document.getElementById('new-task-desc').value;
+    const fecha = document.getElementById('new-task-date').value;
+
+    if(!tipo || !desc || !fecha) return alert("Todos los campos son obligatorios");
+
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // Preparamos los datos como FormData
+    const formData = new FormData();
+    formData.append('id_plan', currentPlanId);
+    formData.append('id_tipo_tarea', tipo);
+    formData.append('descripcion', desc);
+    formData.append('fecha_programada', fecha);
+
+    fetch(`${base}/profesional/tareas`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Ocultar formulario
+            toggleNewTaskForm();
+            // Recargar la lista de tareas
+            openTasksModal(currentPlanId); 
+        } else {
+            alert('Error: ' + (data.message || JSON.stringify(data.errors)));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Error de conexión al guardar tarea.');
+    });
 }
 
 function closeTasksModal() {
@@ -311,6 +388,109 @@ function deleteTask(idTarea) {
         }
     })
     .catch(err => { console.error(err); alert('Error de comunicación.'); });
+}
+
+function openProgressModal(planId) {
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/planes/${planId}/tareas`;
+
+    // Resetear vista del modal
+    document.getElementById('progress-percent-text').textContent = '0%';
+    document.getElementById('progress-bar-fill').style.width = '0%';
+    const container = document.getElementById('progress-tasks-list');
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Cargando...</div>';
+
+    // Abrir modal
+    const modal = document.getElementById('progress-modal');
+    if (modal) modal.classList.add('active');
+
+    // Fetch datos
+    fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(json => {
+        if (!json.success) {
+            container.innerHTML = '<div style="color:red; text-align:center;">Error al cargar datos.</div>';
+            return;
+        }
+
+        const tasks = json.data || [];
+        const total = tasks.length;
+        
+        if (total === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Este plan no tiene tareas asignadas aún.</div>';
+            return;
+        }
+
+        // 1. Calcular Progreso
+        const completedCount = tasks.filter(t => t.estado === 'Completada').length;
+        const percent = Math.round((completedCount / total) * 100);
+
+        // Actualizar barra (con un pequeño delay para que se vea la animación)
+        setTimeout(() => {
+            document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+            document.getElementById('progress-percent-text').textContent = `${percent}%`;
+        }, 100);
+
+        // 2. Renderizar Lista
+        container.innerHTML = '';
+        
+        // Ordenamos para ver las completadas o pendientes primero? 
+        // Generalmente es útil ver el orden cronológico (fecha_programada)
+        tasks.sort((a, b) => new Date(a.fecha_programada) - new Date(b.fecha_programada));
+
+        tasks.forEach(t => {
+            const item = document.createElement('div');
+            item.style.padding = '15px';
+            item.style.marginBottom = '10px';
+            item.style.backgroundColor = '#fff';
+            item.style.border = '1px solid #eee';
+            item.style.borderRadius = '8px';
+            item.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+
+            // Estilos según estado
+            const isCompleted = t.estado === 'Completada';
+            const badgeColor = isCompleted ? '#d1fae5' : '#fff7ed'; // Verde claro / Naranja claro
+            const textColor = isCompleted ? '#065f46' : '#9a3412';  // Verde oscuro / Naranja oscuro
+            const icon = isCompleted ? '✅' : '⏳';
+
+            // HTML para el comentario (solo si existe)
+            let commentHtml = '';
+            if (t.comentarios_paciente && t.comentarios_paciente.trim() !== '') {
+                commentHtml = `
+                    <div style="margin-top: 10px; background-color: #f8f9fa; padding: 10px; border-left: 4px solid #000033; border-radius: 4px;">
+                        <strong style="font-size: 0.85em; color: #555;">💬 Comentario del Paciente:</strong>
+                        <p style="margin: 5px 0 0 0; font-style: italic; color: #333;">"${escapeHtml(t.comentarios_paciente)}"</p>
+                    </div>
+                `;
+            }
+
+            // Fecha formateada
+            const fecha = t.fecha_programada ? t.fecha_programada.replace('T', ' ') : 'Sin fecha';
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="flex: 1; padding-right: 10px;">
+                        <div style="font-weight:bold; font-size:1.05em; color:#222;">${escapeHtml(t.descripcion)}</div>
+                        <div style="font-size:0.85em; color:#666; margin-top:4px;">
+                            📅 ${escapeHtml(fecha)} &nbsp;|&nbsp; Tarea #${t.num_tarea}
+                        </div>
+                    </div>
+                    <span style="background-color:${badgeColor}; color:${textColor}; padding: 4px 10px; border-radius: 15px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">
+                        ${icon} ${escapeHtml(t.estado)}
+                    </span>
+                </div>
+                ${commentHtml}
+            `;
+            container.appendChild(item);
+        });
+
+    })
+    .catch(err => {
+        console.error(err);
+        container.innerHTML = '<div style="color:red; text-align:center;">Error de conexión.</div>';
+    });
 }
 
 
@@ -386,4 +566,7 @@ window.removeTask = removeTask;
 window.openTasksModal = openTasksModal;
 window.closeTasksModal = closeTasksModal;
 window.deleteTask = deleteTask;
+window.toggleNewTaskForm = toggleNewTaskForm;
+window.saveNewTask = saveNewTask;
+window.openProgressModal = openProgressModal;
 window.markTaskComplete = markTaskComplete;
