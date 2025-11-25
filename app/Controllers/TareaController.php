@@ -71,6 +71,13 @@ class TareaController extends BaseController
         
         $nuevoOrden = ($ultimaTarea) ? ($ultimaTarea->num_tarea + 1) : 1;
 
+        $medicamento = $this->request->getPost('nombre_medicamento');
+    
+    // Si viene vacío o es "Seleccionar...", lo guardamos como NULL
+        if (empty($medicamento)) {
+            $medicamento = null;
+        }
+
         // 4. Insertar
         $data = [
             'id_plan'          => $idPlan,
@@ -78,7 +85,8 @@ class TareaController extends BaseController
             'num_tarea'        => $nuevoOrden,
             'descripcion'      => $this->request->getPost('descripcion'),
             'fecha_programada' => $this->request->getPost('fecha_programada'),
-            'estado'           => 'Pendiente'
+            'estado'           => 'Pendiente',
+            'nombre_medicamento' => $medicamento
         ];
 
         if ($tareaModel->insert($data)) {

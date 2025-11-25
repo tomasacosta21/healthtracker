@@ -307,6 +307,8 @@ function toggleNewTaskForm() {
         document.getElementById('new-task-desc').value = '';
         document.getElementById('new-task-date').value = '';
         document.getElementById('new-task-type').selectedIndex = 0;
+        const medSelect = document.getElementById('new-task-medicamento');
+        if(medSelect) medSelect.selectedIndex = 0;
     } else {
         form.style.display = 'none';
     }
@@ -320,6 +322,7 @@ function saveNewTask(e) {
     const tipo = document.getElementById('new-task-type').value;
     const desc = document.getElementById('new-task-desc').value;
     const fecha = document.getElementById('new-task-date').value;
+    const medicamento = document.getElementById('new-task-medicamento').value;
 
     if(!tipo || !desc || !fecha) return alert("Todos los campos son obligatorios");
 
@@ -332,6 +335,9 @@ function saveNewTask(e) {
     formData.append('id_tipo_tarea', tipo);
     formData.append('descripcion', desc);
     formData.append('fecha_programada', fecha);
+    if (medicamento) {
+        formData.append('nombre_medicamento', medicamento);
+    }
 
     fetch(`${base}/profesional/tareas`, {
         method: 'POST',

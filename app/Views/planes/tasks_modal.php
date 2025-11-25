@@ -32,6 +32,18 @@
                         <input type="datetime-local" id="new-task-date" required style="width: 100%; padding: 8px;">
                     </div>
 
+                    <div class="form-group">
+                        <label>Medicamento (Opcional)</label>
+                        <select id="new-task-medicamento" style="width: 100%; padding: 8px;">
+                            <option value="">-- Ninguno / No aplica --</option>
+                            <?php if (!empty($listaMedicamentos)): ?>
+                                <?php foreach ($listaMedicamentos as $med): ?>
+                                    <option value="<?= esc($med->nombre) ?>"><?= esc($med->nombre) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+
                     <div style="text-align: right; margin-top: 10px;">
                         <button type="button" class="btn-cancel" onclick="toggleNewTaskForm()">Cancelar</button>
                         <button type="submit" class="btn-save">Guardar</button>

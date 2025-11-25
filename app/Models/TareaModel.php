@@ -10,14 +10,15 @@ class TareaModel extends Model
     protected $primaryKey       = 'id_tarea';
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['id_plan', 'id_tipo_tarea', 'num_tarea', 'descripcion', 'fecha_programada', 'fecha_fin_programada', 'estado', 'comentarios_paciente', 'fecha_realizacion'];
+    protected $allowedFields    = ['id_plan', 'id_tipo_tarea', 'num_tarea', 'descripcion', 'fecha_programada', 'fecha_fin_programada', 'estado', 'comentarios_paciente', 'fecha_realizacion', 'nombre_medicamento'];
     protected $useTimestamps    = false;
 
     protected $validationRules = [
         'id_plan'           => 'required|numeric',
         'id_tipo_tarea'     => 'required|numeric',
         'descripcion'       => 'required',
-        'fecha_programada'  => 'required|valid_date'
+        'fecha_programada'  => 'required|valid_date',
+        'nombre_medicamento' => 'permit_empty'
     ];
 
     // Métodos personalizados
