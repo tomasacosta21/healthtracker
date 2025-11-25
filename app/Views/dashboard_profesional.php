@@ -17,6 +17,9 @@
             <button class="nav-btn" onclick="scrollToSection('resumen')">Resumen</button>
             <button class="nav-btn" onclick="scrollToSection('planes')">Gestión de Planes</button>
             <button class="nav-btn" onclick="scrollToSection('pacientes')">Mis Pacientes</button>
+            <button class="nav-btn" onclick="scrollToSection('medicamentos')">Medicamentos</button>
+            <button class="nav-btn" onclick="scrollToSection('diagnosticos')">Diagnosticos</button>
+            <button class="nav-btn" onclick="scrollToSection('tipos-tarea')">Tipos de tareas</button>
             
             <button onclick="window.location.href='<?= base_url('logout') ?>'" class="nav-btn" style="margin-top: auto; background-color: #dc2626;">Cerrar Sesión</button>
         </nav>
@@ -135,6 +138,79 @@
             </div>
         </div>
 
+        <div id="medicamentos" class="entity-section">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Medicamentos</h2>
+                    <button class="btn-primary" onclick="openDynamicModal('medicamentos', 'create')">+ Nuevo</button>
+                </div>
+                <table id="medicamentos-table">
+                    <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($listaMedicamentos as $m): ?>
+                        <tr data-id="<?= esc($m->nombre) ?>" data-nombre="<?= esc($m->nombre) ?>">
+                            <td><?= esc($m->nombre) ?></td>
+                            <td class="actions">
+                                <button class="btn-delete" onclick="deleteRecord('medicamentos', '<?= esc($m->nombre) ?>')">Eliminar</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="diagnosticos" class="entity-section">
+            <div class="content-card">
+            <div class="header-section">
+                <h2>Diagnósticos</h2>
+                <button class="btn-primary" onclick="openDynamicModal('diagnosticos', 'create')">+ Nuevo</button>
+            </div>
+            <table id="diagnosticos-table">
+                <thead><tr><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($listaDiagnosticos as $d): ?>
+                        <tr data-id="<?= esc($d->nombre) ?>" 
+                            data-nombre="<?= esc($d->nombre) ?>" 
+                            data-descripcion="<?= esc($d->descripcion) ?>">
+                            <td><?= esc($d->nombre) ?></td>
+                            <td><?= esc($d->descripcion) ?></td>
+                            <td class="actions">
+                                <button class="btn-edit" onclick="openDynamicModal('diagnosticos', 'edit', this.closest('tr'))">Editar</button>
+                                <button class="btn-delete" onclick="deleteRecord('diagnosticos', '<?= esc($d->nombre) ?>')">Eliminar</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tipos-tarea" class="entity-section">
+            <div class="content-card">
+                <div class="header-section">
+                    <h2>Tipos de Tarea</h2>
+                    <button class="btn-primary" onclick="openDynamicModal('tipos-tarea', 'create')">+ Nuevo</button>
+                </div>
+                <table id="tipos-tarea-table">
+                    <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($listaTiposTarea as $t): ?>
+                        <tr data-id="<?= esc($t->id_tipo_tarea) ?>" data-nombre="<?= esc($t->nombre) ?>">
+                            <td><?= esc($t->nombre) ?></td>
+                            <td class="actions">
+                                <button class="btn-edit" onclick="openDynamicModal('tipos-tarea', 'edit', this.closest('tr'))">Editar</button>
+                                <button class="btn-delete" onclick="deleteRecord('tipos-tarea', <?= esc($t->id_tipo_tarea) ?>)">Eliminar</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        
+
         <div id="progress-modal" class="modal">
             <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
@@ -163,6 +239,26 @@
             <div class="modal-footer" style="text-align: right; margin-top: 20px;">
                 <button class="btn-cancel" onclick="closeModal('progress-modal')">Cerrar</button>
             </div>
+        </div>
+    </div>
+    
+    <div id="dynamic-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dynamic-modal-title">Gestión</h3>
+                <button class="close-btn" onclick="closeModal('dynamic-modal')">&times;</button>
+            </div>
+            <form id="dynamic-form" method="POST">
+                <div id="dynamic-fields"></div>
+            
+                <input type="hidden" name="id" id="dynamic-form-id">
+                <input type="hidden" name="_method" id="dynamic-form-method" value="POST">
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('dynamic-modal')">Cancelar</button>
+                    <button type="submit" class="btn-save">Guardar</button>
+                </div>
+            </form>
         </div>
     </div>
 </main>
@@ -202,5 +298,74 @@
             if (el) el.classList.remove('active');
         }
     </script>
+    <script>
+    const formConfigs = {
+        'medicamentos': [ { name: 'nombre', label: 'Nombre del Medicamento', type: 'text', required: true } ],
+        'tipos-tarea': [ { name: 'nombre', label: 'Nombre del Tipo', type: 'text', required: true } ],
+        'diagnosticos': [
+            { name: 'nombre', label: 'Nombre Diagnóstico', type: 'text', required: true },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea', required: false }
+        ]
+    };
+
+    function openDynamicModal(entity, mode, trElement = null) {
+        const modal = document.getElementById('dynamic-modal');
+        const form = document.getElementById('dynamic-form');
+        const container = document.getElementById('dynamic-fields');
+        const title = document.getElementById('dynamic-modal-title');
+        
+        container.innerHTML = '';
+        form.reset();
+        document.getElementById('dynamic-form-method').value = 'POST';
+
+        // Generar campos
+        const config = formConfigs[entity];
+        if(config) {
+            config.forEach(field => {
+                const div = document.createElement('div');
+                div.className = 'form-group'; // Usa tus clases CSS existentes
+                div.innerHTML = `<label>${field.label}</label>`;
+                
+                let input;
+                if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 3;
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type;
+                }
+                input.name = field.name;
+                if(field.required) input.required = true;
+                
+                // Rellenar si es edición
+                if(mode === 'edit' && trElement) {
+                    input.value = trElement.dataset[field.name] || '';
+                }
+                
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+        }
+
+        // Configurar URL
+        // Construir la URL de acción de forma robusta usando el meta base-url y el role
+        const baseMeta = document.querySelector('meta[name="base-url"]').content.replace(/\/$/, '') || '';
+        const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
+        const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
+        let actionUrl = `${baseUrl}/${entity}`;
+
+        if (mode === 'create') {
+            title.textContent = 'Nuevo Registro';
+        } else {
+            title.textContent = 'Editar Registro';
+            const id = trElement.dataset.id;
+            actionUrl += `/${id}`;
+            document.getElementById('dynamic-form-method').value = 'PUT';
+        }
+
+        form.action = actionUrl;
+        modal.classList.add('active');
+    }
+</script>
 </body>
 </html>
