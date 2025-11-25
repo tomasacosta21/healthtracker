@@ -29,17 +29,14 @@ class TipoTareaController extends BaseController
     public function create()
     {
         $model = new TipoTareaModel();
-
-        $data = [
-            'nombre' => $this->request->getPost('nombre'),
-        ];
+        $data = ['nombre' => $this->request->getPost('nombre')];
 
         if ($model->insert($data) === false) {
             return redirect()->back()->withInput()->with('errors', $model->errors());
         }
 
-        return redirect()->to(base_url('admin/tipos-tarea'))
-                         ->with('success', 'Tipo de tarea creado correctamente');
+        // CAMBIO CLAVE AQUÍ
+       return redirect()->back()->with('success', 'Tipo de tarea creado correctamente');
     }
 
     public function show($id = null)
@@ -69,36 +66,31 @@ class TipoTareaController extends BaseController
     public function update($id = null)
     {
         $model = new TipoTareaModel();
-        $tipo = $model->find($id);
-
-        if (! $tipo) {
-            return redirect()->to(base_url('admin/tipos-tarea'))->with('error', 'No encontrado');
+        // Validación previa de existencia
+        if (!$model->find($id)) {
+            return redirect()->back()->with('error', 'No encontrado');
         }
 
-        $data = [
-            'nombre' => $this->request->getPost('nombre'),
-        ];
+        $data = ['nombre' => $this->request->getPost('nombre')];
 
         if ($model->update($id, $data) === false) {
             return redirect()->back()->withInput()->with('errors', $model->errors());
         }
 
-        return redirect()->to(base_url('admin/tipos-tarea'))
-                         ->with('success', 'Tipo de tarea actualizado correctamente');
+        // CAMBIO CLAVE AQUÍ
+        return redirect()->back()->with('success', 'Tipo de tarea actualizado correctamente');
     }
 
     public function delete($id = null)
     {
         $model = new TipoTareaModel();
-        $tipo = $model->find($id);
-
-        if (! $tipo) {
-            return redirect()->to(base_url('admin/tipos-tarea'))->with('error', 'No encontrado');
+        if (!$model->find($id)) {
+            return redirect()->back()->with('error', 'No encontrado');
         }
 
         $model->delete($id);
 
-        return redirect()->to(base_url('admin/tipos-tarea'))
-                         ->with('success', 'Tipo de tarea eliminado correctamente');
+        // CAMBIO CLAVE AQUÍ
+        return redirect()->back()->with('success', 'Tipo de tarea eliminado correctamente');
     }
 }

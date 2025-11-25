@@ -36,15 +36,12 @@ class DiagnosticoController extends BaseController
             'descripcion' => $this->request->getPost('descripcion'),
         ];
 
-        // Es buena práctica validar antes de insertar. 
-        // Si falla save(), podrías volver atrás con errores.
         if ($diagnosticoModel->insert($data) === false) {
             return redirect()->back()->withInput()->with('errors', $diagnosticoModel->errors());
         }
 
-        // CORRECCIÓN: Redirección considerando el prefijo 'admin'
-        return redirect()->to(base_url('admin/diagnosticos'))
-                         ->with('success', 'Diagnóstico creado correctamente');
+        // CAMBIO: Regresa al dashboard desde donde se llamó
+        return redirect()->back()->with('success', 'Diagnóstico creado correctamente');
     }
     public function edit($id = null) {
         $diagnosticoModel = new DiagnosticoModel();
@@ -58,10 +55,9 @@ class DiagnosticoController extends BaseController
     }
     public function update($id = null) {
         $diagnosticoModel = new DiagnosticoModel();
-        $diagnostico = $diagnosticoModel->find($id);
-
-        if (!$diagnostico) {
-             return redirect()->to(base_url('admin/diagnosticos'))->with('error', 'No encontrado');
+        
+        if (!$diagnosticoModel->find($id)) {
+             return redirect()->back()->with('error', 'No encontrado');
         }
 
         $data = [
@@ -69,26 +65,23 @@ class DiagnosticoController extends BaseController
             'descripcion' => $this->request->getPost('descripcion'),
         ];
 
-        // Es buena práctica validar antes de actualizar. 
-        // Si falla update(), podrías volver atrás con errores.
         if ($diagnosticoModel->update($id, $data) === false) {
             return redirect()->back()->withInput()->with('errors', $diagnosticoModel->errors());
         }
 
-        return redirect()->to(base_url('admin/diagnosticos'))
-                         ->with('success', 'Diagnóstico actualizado correctamente');
+        // CAMBIO
+        return redirect()->back()->with('success', 'Diagnóstico actualizado correctamente');
     }
     public function delete($id = null) {
         $diagnosticoModel = new DiagnosticoModel();
-        $diagnostico = $diagnosticoModel->find($id);
-
-        if (!$diagnostico) {
-             return redirect()->to(base_url('admin/diagnosticos'))->with('error', 'No encontrado');
+        
+        if (!$diagnosticoModel->find($id)) {
+             return redirect()->back()->with('error', 'No encontrado');
         }
 
         $diagnosticoModel->delete($id);
 
-        return redirect()->to(base_url('admin/diagnosticos'))
-                         ->with('success', 'Diagnóstico eliminado correctamente');
+        // CAMBIO
+        return redirect()->back()->with('success', 'Diagnóstico eliminado correctamente');
     }
 }

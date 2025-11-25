@@ -100,6 +100,9 @@ $routes->group('profesional', ['filter' => 'auth:Profesional'], static function 
         // Limitamos a las acciones que el profesional puede hacer
         // index (listar mis planes), create, store, edit, update, delete (baja lógica)
     ]);
+    $routes->resource('medicamentos', ['controller' => 'MedicamentoController']);
+    $routes->resource('tipos-tarea', ['controller' => 'TipoTareaController']);
+    $routes->resource('diagnosticos', ['controller' => 'DiagnosticoController']);
 
     // HU-05a: ABMC de Tareas dentro de un plan
     // Entidad: Tarea

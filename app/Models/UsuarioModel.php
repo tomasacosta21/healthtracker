@@ -40,8 +40,10 @@ class UsuarioModel extends Model
     // WHERE p.id_profesional = $idProfesional
     public function getPacientesPorProfesional($idProfesional){
         $data = $this->db->table('usuarios u')
+            ->select('u.*') 
             ->join('planes p', 'u.id_usuario = p.id_paciente')
             ->where('p.id_profesional', $idProfesional)
+            ->groupBy('u.id_usuario')
             ->get()
             ->getResult();
         return $data;

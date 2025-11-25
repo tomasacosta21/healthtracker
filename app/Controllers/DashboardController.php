@@ -83,7 +83,8 @@ class DashboardController extends BaseController
         $diagnosticoModel = new DiagnosticoModel();
         $tareaModel = new TareaModel();
         $tipoTareaModel = new TipoTareaModel(); // Agregado
-
+        $medicamentoModel = new MedicamentoModel();
+        
         $idProfesional = $this->session->get('id_usuario');
 
         // 2. Obtener datos
@@ -105,9 +106,10 @@ class DashboardController extends BaseController
 
             // Listas para tablas y selects
             'listaPlanes'       => $misPlanes,
-            'listaPacientes'    => $misPacientes,
-            'todosLosPacientes' => $todosLosPacientes,
+            'listaPacientes'    => $misPacientes,      
+            'todosLosPacientes' => $todosLosPacientes, 
             'listaDiagnosticos' => $listaDiagnosticos,
+            'listaMedicamentos' => $medicamentoModel->findAll(), 
             'listaTiposTarea'   => $listaTiposTarea,
             'listaTareas'       => $listaTareas
         ];

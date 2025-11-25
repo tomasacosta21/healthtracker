@@ -37,9 +37,8 @@ class MedicamentoController extends BaseController
             return redirect()->back()->withInput()->with('errors', $medicamentoModel->errors());
         }
 
-        // CORRECCIÓN: Redirección considerando el prefijo 'admin'
-        return redirect()->to(base_url('admin/medicamentos'))
-                         ->with('success', 'Medicamento creado correctamente');
+        
+        return redirect()->back()->with('success', 'Medicamento creado correctamente');
     }
 
     // GET admin/medicamentos/(:segment)
@@ -70,17 +69,15 @@ class MedicamentoController extends BaseController
     public function update($id = null) {
         $medicamentoModel = new MedicamentoModel();
         
-        // Nota: Para PUT/PATCH, getPost a veces da problemas con ciertos tipos de contenido.
-        // CodeIgniter recomienda getRawInput() o asegurar que el form envíe POST con _method=PUT
-        $data = [
-            'nombre' => $this->request->getPost('nombre'),
-        ];
+        // Nota: Para PUT, asegúrate de que tu form envíe _method=PUT o usa getRawInput si falla
+        $data = ['nombre' => $this->request->getPost('nombre')]; 
 
         if ($medicamentoModel->update($id, $data) === false) {
              return redirect()->back()->withInput()->with('errors', $medicamentoModel->errors());
         }
 
-        return redirect()->to(base_url('admin/medicamentos'));
+        // CAMBIO: Usar back()
+        return redirect()->back()->with('success', 'Medicamento actualizado correctamente');
     }
 
     // DELETE admin/medicamentos/(:segment)
@@ -88,7 +85,8 @@ class MedicamentoController extends BaseController
         $medicamentoModel = new MedicamentoModel();
         $medicamentoModel->delete($id);
         
-        return redirect()->to(base_url('admin/medicamentos'));
+        // CAMBIO: Usar back()
+        return redirect()->back()->with('success', 'Medicamento eliminado correctamente');
     }
 }
 
@@ -98,3 +96,5 @@ class MedicamentoController extends BaseController
      * - Validar entrada con el servicio de Validation.
      * - Proteger contra CSRF.
      * - Comprobar autorización: sólo el profesional asignado o admin pueden actualizar.
+     * - Manejar errores y redirecciones adecuadamente.
+     */
