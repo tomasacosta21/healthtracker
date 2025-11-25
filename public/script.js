@@ -1,23 +1,17 @@
 /**
  * ARCHIVO DE SCRIPT PRINCIPAL DE LA APLICACIÓN
- * * Contiene funciones de UI genéricas y reutilizables.
- * No debe contener lógica específica de una sola página.
+ * Contiene funciones de UI genéricas y reutilizables.
  */
 
-/**
- * Muestra una sección de entidad (pestaña) y oculta las demás.
- * @param {string} entity - El ID del elemento de la sección a mostrar.
- * @param {HTMLElement} navElement - El elemento de navegación (botón) que fue clickeado.
- */
+// Configuración inicial de CSRF para Fetch
+const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+let csrfToken = csrfTokenMeta ? csrfTokenMeta.content : '';
+
 function scrollToEntity(entity, navElement) {
-    //al clickear en el boton del nav, se desplaza suavemente a la seccion correspondiente
-    document.getElementById(entity).scrollIntoView({ behavior: 'smooth' });
+    const el = document.getElementById(entity);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
-/**
- * Filtra las filas de una tabla basado en el texto de entrada.
- * @param {string} entity - El prefijo del ID de la tabla (ej. 'planes' para 'planes-table').
- */
 function filterTable(entity) {
     const input = event.target.value.toLowerCase();
     const table = document.querySelector(`#${entity}-table tbody`);
@@ -31,16 +25,6 @@ function filterTable(entity) {
     }
 }
 
-function previous() {
-    // Navega a la vista anterior, es decir, si estoy en /profesional/gestion-plan
-    // vuelve a /profesional
-    
-}
-
-/**
- * Cierra cualquier modal que tenga el ID proporcionado.
- * @param {string} modalId - El ID del modal a cerrar (ej. 'modal', 'tasks-modal').
- */
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
@@ -49,13 +33,7 @@ function closeModal(modalId) {
 }
 
 /**
- * Abre el modal principal de "Crear" / "Editar".
- * NO usa JSON para el modo 'edit'. Lee los datos desde los atributos 'data-*'
- * del botón/elemento que se le pasa.
- *
- * @param {string} entity - El nombre de la entidad (ej. 'planes', 'usuarios').
- * @param {string} mode - 'create' o 'edit'.
- * @param {HTMLElement|null} element - El elemento (botón) que fue clickeado (solo en modo 'edit').
+ * Abre el modal principal.
  */
 function openModal(entity, mode, element = null) {
     const modal = document.getElementById("modal");
@@ -63,50 +41,45 @@ function openModal(entity, mode, element = null) {
 
     const modalTitle = document.getElementById("modal-title");
     const form = document.getElementById("entity-form");
-    const formFields = document.getElementById("form-fields");
     
-    // Guardar el estado original del formulario (campos vacíos)
-    if (!form.originalHTML) {
-        form.originalHTML = formFields.innerHTML;
-    }
-    
-    // Resetear formulario
+    // Limpiar inputs hidden previos de tareas (si existen) y la lista visual
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    const listContainer = document.getElementById('plan-tasks-list');
+    if (inputsContainer) inputsContainer.innerHTML = '';
+    if (listContainer) listContainer.innerHTML = '';
+
     form.reset();
-    formFields.innerHTML = form.originalHTML; // Restaura campos vacíos
     
-    // Asumimos que la URL base es la del dashboard actual
-    // ej. /profesional/gestion-plan -> /profesional
+    // Reset manual de selects para que no se queden pegados
+    const selects = form.querySelectorAll('select');
+    selects.forEach(s => s.selectedIndex = 0);
+
     const baseUrl = window.location.pathname.split('/').slice(0, 2).join('/'); 
 
     if (mode === 'create') {
         modalTitle.textContent = `Nuevo ${entity}`;
-        // Usar la ruta RESTful del resource: POST to /profesional/planes
-        form.action = `${baseUrl}/${entity}`;
-        document.getElementById('form-method').value = 'POST';
-
-        const idInput = form.querySelector('input[name="id"]');
+        form.action = `${baseUrl}/${entity}`; // POST normal
+        
+        // Resetear ID y Method spoofing
+        const idInput = document.getElementById('form-id');
         if (idInput) idInput.value = '';
+        document.getElementById('form-method').value = 'POST';
 
         modal.classList.add("active");
 
     } else if (mode === 'edit' && element) {
-        // --- ¡LÓGICA DE EDICIÓN SIN JSON! ---
         const id = element.dataset.id;
         modalTitle.textContent = `Editar ${entity}`;
-        // Usar la ruta RESTful de update: POST con spoofing _method=PUT to /profesional/planes/{id}
-        form.action = `${baseUrl}/${entity}/${id}`;
-        document.getElementById('form-method').value = 'PUT';
+        form.action = `${baseUrl}/${entity}/${id}`; // La URL base
+        document.getElementById('form-method').value = 'PUT'; // Method Spoofing para CI4
 
-        // 1. Leer todos los atributos 'data-*' del botón
+        // Rellenar datos
         const data = element.dataset;
-
-        // 2. Rellenar el formulario con los datos
         for (const key in data) {
             const input = form.querySelector(`[name="${key}"]`);
             if (input) {
-                // Manejar fechas que vienen del HTML
                 if (input.type === 'date' && data[key]) {
-                    input.value = data[key].split(' ')[0]; // Toma solo la parte YYYY-MM-DD
+                    input.value = data[key].split(' ')[0];
                 } else if (input.type === 'datetime-local' && data[key]) {
                     input.value = data[key].replace(' ', 'T');
                 } else {
@@ -115,168 +88,274 @@ function openModal(entity, mode, element = null) {
             }
         }
         
-        // 3. Guardar el ID en un campo hidden (si existe uno llamado 'id')
-        const idInput = form.querySelector('input[name="id"]');
-        if (idInput) {
-            idInput.value = id;
-        }
+        const idInput = document.getElementById('form-id');
+        if (idInput) idInput.value = id;
 
         modal.classList.add("active");
     }
 }
 
-/**
- * Envía una solicitud de eliminación al servidor.
- * ¡VERSIÓN SIN JSON!
- * Esta función crea un formulario temporal y lo envía,
- * causando una recarga de página completa, que es lo que
- * un controlador de CodeIgniter (con un redirect) esperaría.
- *
- * @param {string} entity - El nombre de la entidad (ej. 'planes').
- * @param {number} id - El ID del item a eliminar.
- */
 function deleteRecord(entity, id) {
-    if (!confirm("¿Está seguro de eliminar este registro?")) {
-        return;
-    }
+    if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
-    // Asumimos la misma URL base
     const baseUrl = window.location.pathname.split('/').slice(0, 2).join('/');
     
-    // 1. Crear un formulario temporal
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `${baseUrl}/${entity}/${id}`;
-    
-    // (Opcional) Añadir token CSRF si lo estás usando
-    // const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-    // const csrfInput = document.createElement('input');
-    // csrfInput.type = 'hidden';
-    // csrfInput.name = 'csrf_token_name'; // El nombre de tu token
-    // csrfInput.value = csrfToken;
-    // form.appendChild(csrfInput);
-
-    // 2. Añadir input _method=DELETE para method spoofing
-    const methodInput = document.createElement('input');
-    methodInput.type = 'hidden';
-    methodInput.name = '_method';
-    methodInput.value = 'DELETE';
-    form.appendChild(methodInput);
-
-    // (Opcional) Añadir token CSRF si lo estás usando y conoces el nombre del campo
-    // const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-    // const csrfInput = document.createElement('input'); csrfInput.type='hidden'; csrfInput.name='csrf_token_name'; csrfInput.value=csrfToken; form.appendChild(csrfInput);
-
-    // 3. Añadirlo al body y enviarlo
-    document.body.appendChild(form);
-    form.submit();
-    
-    // 3. El backend de CodeIgniter procesará esto y (probablemente)
-    // hará un `return redirect()->back();`
+    // Usamos Fetch para delete también, es más limpio
+    fetch(`${baseUrl}/${entity}/${id}`, {
+        method: 'POST', // CI4 resource delete suele ser via POST con _method=DELETE o DELETE directo si server lo soporta
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: '_method=DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            alert('Eliminado correctamente');
+            location.reload();
+        } else {
+            alert('Error al eliminar: ' + (data.message || 'Desconocido'));
+        }
+    })
+    .catch(err => console.error(err));
 }
 
-/* ====== Submodal y gestión de tareas en cliente para el formulario de Plan ====== */
+/* ====== Submodal y gestión de tareas en cliente ====== */
 
 function openTaskCreator() {
     const modal = document.getElementById('task-creator-modal');
     if (!modal) return;
+    
     // Reset fields
-    const desc = document.getElementById('task-descripcion');
-    const fecha = document.getElementById('task-fecha');
-    const tipo = document.getElementById('task-tipo');
-    if (desc) desc.value = '';
-    if (fecha) fecha.value = '';
-    if (tipo) tipo.value = '';
+    document.getElementById('task-descripcion').value = '';
+    document.getElementById('task-fecha').value = '';
+    document.getElementById('task-tipo').selectedIndex = 0;
+    
     modal.classList.add('active');
 }
 
 function closeTaskCreator() {
     const modal = document.getElementById('task-creator-modal');
-    if (!modal) return;
-    modal.classList.remove('active');
+    if (modal) modal.classList.remove('active');
 }
 
 function addTaskToPlan() {
     const desc = document.getElementById('task-descripcion').value.trim();
     const fecha = document.getElementById('task-fecha').value;
-    const tipo = document.getElementById('task-tipo').value.trim();
+    
+    // Obtener datos del SELECT (ID y Texto)
+    const tipoSelect = document.getElementById('task-tipo');
+    const tipoId = tipoSelect.value; // El ID (para la BD)
+    const tipoNombre = tipoSelect.options[tipoSelect.selectedIndex].text; // El Nombre (para mostrar)
 
     if (!desc) {
-        alert('La descripción de la tarea es obligatoria.');
+        alert('La descripción es obligatoria.');
+        return;
+    }
+    if (!tipoId) {
+        alert('Debes seleccionar un tipo de tarea.');
+        return;
+    }
+    if (!fecha) {
+        alert('La fecha es obligatoria.');
         return;
     }
 
-    const key = 't' + Date.now() + Math.floor(Math.random() * 999);
+    const key = 't' + Date.now(); // ID temporal único
 
-    // Añadir a la lista visible
+    // 1. Añadir a la lista VISIBLE (Usuario ve nombres bonitos)
     const list = document.getElementById('plan-tasks-list');
     const li = document.createElement('li');
     li.dataset.taskKey = key;
-    li.innerHTML = `<strong>${escapeHtml(desc)}</strong> <br><small>${fecha ? fecha.replace('T',' ') : ''} ${tipo ? ' - ' + escapeHtml(tipo) : ''}</small> <button type="button" onclick="removeTask('${key}')" class="btn-delete" style="margin-left:8px;">Eliminar</button>`;
+    li.style.padding = "10px";
+    li.style.borderBottom = "1px solid #eee";
+    li.style.display = "flex";
+    li.style.justifyContent = "space-between";
+    li.style.alignItems = "center";
+    
+    li.innerHTML = `
+        <div>
+            <strong>${escapeHtml(tipoNombre)}</strong>: ${escapeHtml(desc)} <br>
+            <small style="color: #666;">📅 ${fecha.replace('T',' ')}</small>
+        </div>
+        <button type="button" onclick="removeTask('${key}')" class="btn-delete" style="padding: 4px 8px; font-size: 12px;">Quitar</button>
+    `;
     list.appendChild(li);
 
-    // Añadir inputs hidden al formulario principal
+    // 2. Añadir inputs HIDDEN (Servidor recibe IDs)
     const inputsContainer = document.getElementById('plan-tasks-inputs');
-    const inpDesc = document.createElement('input'); inpDesc.type = 'hidden'; inpDesc.name = `tareas[${key}][descripcion]`; inpDesc.value = desc; inpDesc.dataset.taskKey = key;
-    const inpFecha = document.createElement('input'); inpFecha.type = 'hidden'; inpFecha.name = `tareas[${key}][fecha_programada]`; inpFecha.value = fecha; inpFecha.dataset.taskKey = key;
-    const inpTipo = document.createElement('input'); inpTipo.type = 'hidden'; inpTipo.name = `tareas[${key}][tipo]`; inpTipo.value = tipo; inpTipo.dataset.taskKey = key;
-
-    inputsContainer.appendChild(inpDesc);
-    inputsContainer.appendChild(inpFecha);
-    inputsContainer.appendChild(inpTipo);
+    
+    createHiddenInput(inputsContainer, `tareas[${key}][descripcion]`, desc, key);
+    createHiddenInput(inputsContainer, `tareas[${key}][fecha_programada]`, fecha, key);
+    createHiddenInput(inputsContainer, `tareas[${key}][tipo]`, tipoId, key); // Aquí va el ID
 
     closeTaskCreator();
 }
 
+function createHiddenInput(container, name, value, key) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    input.dataset.taskKey = key;
+    container.appendChild(input);
+}
+
 function removeTask(key) {
-    // Remove visible li
+    // Remove visual
     const list = document.getElementById('plan-tasks-list');
     const items = list.querySelectorAll('li');
     items.forEach(li => { if (li.dataset.taskKey === key) li.remove(); });
 
-    // Remove hidden inputs
+    // Remove data
     const inputsContainer = document.getElementById('plan-tasks-inputs');
-    const hiddenInputs = inputsContainer.querySelectorAll('input');
-    hiddenInputs.forEach(i => { if (i.dataset.taskKey === key) i.remove(); });
+    const hiddenInputs = inputsContainer.querySelectorAll(`input[data-task-key="${key}"]`);
+    hiddenInputs.forEach(i => i.remove());
 }
 
+/* ====== Modal lista Tareas (Ajax) ====== */
+
+function openTasksModal(planId) {
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/planes/${planId}/tareas`;
+
+    const list = document.getElementById('tasks-list');
+    if (!list) return alert('Modal de tareas no encontrado en la página.');
+    list.innerHTML = '<li style="padding:10px;color:#666;">Cargando...</li>';
+
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(json => {
+            if (!json || !json.success) {
+                list.innerHTML = '<li style="padding:10px;color:#c00;">No se pudieron obtener las tareas.</li>';
+                return;
+            }
+
+            list.innerHTML = '';
+            const tipos = (window.serverData && window.serverData.tipos) ? window.serverData.tipos : [];
+            const tipoMap = {};
+            tipos.forEach(t => { tipoMap[t.id_tipo_tarea] = t.nombre; });
+
+            if (!json.data || json.data.length === 0) {
+                list.innerHTML = '<li class="empty-state" style="padding:12px;color:#666;">No hay tareas para este plan.</li>';
+            } else {
+                json.data.forEach(t => {
+                    const li = document.createElement('li');
+                    li.style.padding = '10px';
+                    li.style.borderBottom = '1px solid #eee';
+                    const tipoNombre = tipoMap[t.id_tipo_tarea] || (t.id_tipo_tarea || 'Tipo N/D');
+                    const fecha = t.fecha_programada ? t.fecha_programada.replace('T',' ') : (t.fecha_programada || 'Sin fecha');
+                    const estado = t.estado || '';
+
+                    li.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                          <div>
+                            <strong>${escapeHtml(tipoNombre)}:</strong> ${escapeHtml(t.descripcion || '')} <br>
+                            <small style="color:#666">#${t.num_tarea || ''} — ${escapeHtml(fecha)} — <em>${escapeHtml(estado)}</em></small>
+                          </div>
+                          <div style="display:flex; gap:8px;">
+                            <button class="btn-secondary" onclick="markTaskComplete(${t.id_tarea})">Marcar</button>
+                            <button class="btn-delete" onclick="deleteTask(${t.id_tarea})">Eliminar</button>
+                          </div>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            }
+
+            // Mostrar modal
+            const modal = document.getElementById('tasks-modal');
+            if (modal) modal.classList.add('active');
+        })
+        .catch(err => {
+            console.error(err);
+            list.innerHTML = '<li style="padding:10px;color:#c00;">Error al solicitar las tareas. Revisa la consola.</li>';
+        });
+}
+
+function closeTasksModal() {
+    const modal = document.getElementById('tasks-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function deleteTask(idTarea) {
+    if (!confirm('¿Eliminar esta tarea?')) return;
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/tareas/${idTarea}`;
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        },
+        body: '_method=DELETE'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success' || data.success) {
+            alert('Tarea eliminada');
+            // Refrescar lista
+            const modal = document.getElementById('tasks-modal');
+            if (modal && modal.classList.contains('active')) {
+                // Recuperar planId from URL in header or re-open: easiest is to reload modal content via last opened plan id
+                // For simplicity reload page
+                location.reload();
+            }
+        } else {
+            alert('Error al eliminar: ' + (data.message || JSON.stringify(data)));
+        }
+    })
+    .catch(err => { console.error(err); alert('Error de comunicación.'); });
+}
+
+
 function escapeHtml(text) {
+    if (!text) return text;
     return String(text).replace(/[&<>\"]+/g, function (s) {
         return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]);
     });
 }
 
-// Escuchar el envío del formulario
+// Listener para el envío AJAX del formulario principal
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('entity-form');
     
     if (form) {
         form.addEventListener('submit', function(e) {
-            e.preventDefault(); // 1. Evitar la recarga de la página
+            e.preventDefault(); // Stop envío normal
 
             const formData = new FormData(this);
             const url = this.action;
             
-            // Limpiar errores previos
-            // (Aquí podrías borrar mensajes de error viejos del DOM)
+            // Obtener headers (especialmente CSRF si cambia)
+            const currentCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
             fetch(url, {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest' // 2. Importante: Avisar a CI4 que es AJAX
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": currentCsrf
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
-                    // 3. Éxito: Cerrar modal y recargar o actualizar tabla
-                    alert(data.message);
+                    alert(data.message || "Guardado correctamente");
                     closeModal('modal');
-                    location.reload(); // Recargamos para ver el nuevo dato
+                    location.reload();
                 } else {
-                    // 4. Error: Mostrar errores sin cerrar el modal
-                    let errorMsg = "Errores de validación:\n";
+                    let errorMsg = "Errores:\n";
                     if (data.errors) {
                         for (const [field, msg] of Object.entries(data.errors)) {
                             errorMsg += `- ${msg}\n`;
@@ -289,13 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert("Ocurrió un error de red.");
+                alert("Error de comunicación con el servidor. Ver consola.");
             });
         });
     }
 });
 
-// Expose functions globally so inline handlers in views keep working when script loaded as module
+// Exponer funciones globales
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.deleteRecord = deleteRecord;
@@ -304,4 +383,7 @@ window.openTaskCreator = openTaskCreator;
 window.closeTaskCreator = closeTaskCreator;
 window.addTaskToPlan = addTaskToPlan;
 window.removeTask = removeTask;
-window.addNewTaskForPlan = openTaskCreator; // legacy shim used in tasks modal
+window.openTasksModal = openTasksModal;
+window.closeTasksModal = closeTasksModal;
+window.deleteTask = deleteTask;
+window.markTaskComplete = markTaskComplete;

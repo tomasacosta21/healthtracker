@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?= base_url('styles.css') ?>">
 <div id="modal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -12,12 +13,12 @@
             <div id="form-fields">
                 <div class="field">
                     <label for="nombre">Nombre del Plan</label>
-                    <input type="text" name="nombre" id="nombre" required>
+                    <input type="text" name="nombre" id="nombre" required placeholder="Ej: Control de Diabetes 2025">
                 </div>
 
                 <div class="field">
                     <label for="descripcion">Descripción</label>
-                    <textarea name="descripcion" id="descripcion" rows="3"></textarea>
+                    <textarea name="descripcion" id="descripcion" rows="3" placeholder="Objetivos y notas generales del plan..."></textarea>
                 </div>
 
                 <div class="field">
@@ -56,47 +57,65 @@
                 </div>
 
                 <hr>
-                <h4>Tareas del Plan</h4>
+                <h4>Tareas Iniciales del Plan</h4>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">Agrega las primeras tareas para inicializar este plan.</p>
+                
                 <div>
                     <button type="button" class="btn-secondary" onclick="openTaskCreator()">+ Agregar Tarea</button>
                 </div>
-                <ul id="plan-tasks-list" style="margin-top:10px;">
-                    <!-- Items añadidos en cliente -->
+                
+                <!-- Lista visual de tareas agregadas -->
+                <ul id="plan-tasks-list" style="margin-top:15px; list-style: none; padding: 0;">
+                    <!-- Items añadidos dinámicamente por JS -->
                 </ul>
-                <div id="plan-tasks-inputs"><!-- Hidden inputs for tasks --></div>
+                
+                <!-- Contenedor de inputs ocultos para enviar al servidor -->
+                <div id="plan-tasks-inputs"></div>
             </div>
 
             <div class="form-actions">
                 <button type="button" class="btn-cancel" onclick="closeModal('modal')">Cancelar</button>
-                <button type="submit" class="btn-save">Guardar</button>
+                <button type="submit" class="btn-save">Guardar Plan</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Submodal: Creador de tarea (para agregar tareas al formulario del plan) -->
+<!-- Submodal: Creador de tarea -->
 <div id="task-creator-modal" class="modal">
-    <div class="modal-content" style="max-width:600px;">
+    <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
             <h3 id="task-creator-title">Nueva Tarea</h3>
             <button class="close-btn" onclick="closeTaskCreator()">&times;</button>
         </div>
         <div class="modal-body">
             <div class="field">
-                <label for="task-descripcion">Descripción</label>
-                <textarea id="task-descripcion" rows="3"></textarea>
+                <label for="task-descripcion">Descripción de la Tarea</label>
+                <textarea id="task-descripcion" rows="3" placeholder="Ej: Tomar 1 pastilla de metformina..."></textarea>
             </div>
+            
+            <div class="field">
+                <label for="task-tipo">Tipo de Tarea</label>
+                <!-- CAMBIO AQUI: Select dinámico -->
+                <select id="task-tipo">
+                    <option value="">Seleccionar Tipo...</option>
+                    <?php if (! empty($listaTiposTarea)): ?>
+                        <?php foreach ($listaTiposTarea as $tipo): ?>
+                            <!-- Value es el ID, Texto es el Nombre -->
+                            <option value="<?= esc($tipo->id_tipo_tarea) ?>"><?= esc($tipo->nombre) ?></option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+
             <div class="field">
                 <label for="task-fecha">Fecha Programada</label>
                 <input type="datetime-local" id="task-fecha">
             </div>
-            <div class="field">
-                <label for="task-tipo">Tipo de Tarea (opcional)</label>
-                <input type="text" id="task-tipo" placeholder="Ej: Recordatorio, Ejercicio">
-            </div>
-            <div style="margin-top:12px; display:flex; gap:8px;">
-                <button class="btn-primary" type="button" onclick="addTaskToPlan()">Agregar a Plan</button>
+            
+            <div style="margin-top:20px; display:flex; justify-content: flex-end; gap:10px;">
                 <button class="btn-cancel" type="button" onclick="closeTaskCreator()">Cancelar</button>
+                <button class="btn-primary" type="button" onclick="addTaskToPlan()">Agregar a la Lista</button>
             </div>
         </div>
     </div>

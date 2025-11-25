@@ -84,7 +84,7 @@
                                     <td>#<?= esc($plan->id) ?></td>
                                     <td>
                                         <strong><?= esc($plan->nombre) ?></strong><br>
-                                        <small style="color:#666"><?= esc($plan->descripcion) ?></small>
+                                        <small style="color:#555"><?= esc($plan->descripcion) ?></small>
                                     </td>
                                     <td>ID: <?= esc($plan->id_paciente) ?></td>
                                     <td><?= esc($plan->nombre_diagnostico) ?></td>
@@ -134,17 +134,27 @@
             </div>
         </div>
 
+        <div class="TasksModal">
+
+        </div>
+
+
     </main>
 
     <?= view('planes/modal_form', [
         'todosLosPacientes' => $todosLosPacientes ?? [],
-        'listaDiagnosticos' => $listaDiagnosticos ?? []
+        'listaDiagnosticos' => $listaDiagnosticos ?? [],
+        'listaTiposTarea'   => $listaTiposTarea ?? []
     ]) ?>
+
+    <?= view('planes/tasks_modal') ?>
 
     <script>
         window.serverData = {
             pacientes: <?= json_encode($todosLosPacientes ?? []) ?>,
             diagnosticos: <?= json_encode($listaDiagnosticos ?? []) ?>
+            , tipos: <?= json_encode($listaTiposTarea ?? []) ?>
+            , role: <?= json_encode(session()->get('nombre_rol') ?? '') ?>
         };
     </script>
 
