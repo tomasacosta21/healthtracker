@@ -55,7 +55,10 @@ function openModal(entity, mode, element = null) {
     const selects = form.querySelectorAll('select');
     selects.forEach(s => s.selectedIndex = 0);
 
-    const baseUrl = window.location.pathname.split('/').slice(0, 2).join('/'); 
+    // Construir base URL usando meta base-url y rol del servidor si está disponible
+    const baseMeta = document.querySelector('meta[name="base-url"]')?.content.replace(/\/$/, '') || '';
+    const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
+    const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
 
     if (mode === 'create') {
         modalTitle.textContent = `Nuevo ${entity}`;
@@ -99,7 +102,10 @@ function openModal(entity, mode, element = null) {
 function deleteRecord(entity, id) {
     if (!confirm("¿Está seguro de eliminar este registro?")) return;
 
-    const baseUrl = window.location.pathname.split('/').slice(0, 2).join('/');
+    // Construir base URL seguro para llamadas a recursos (no depender de la ruta actual)
+    const baseMeta = document.querySelector('meta[name="base-url"]')?.content.replace(/\/$/, '') || '';
+    const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
+    const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
     
     // Usamos Fetch para delete también, es más limpio
     fetch(`${baseUrl}/${entity}/${id}`, {
