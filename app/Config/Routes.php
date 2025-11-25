@@ -23,6 +23,10 @@ $routes->get('logout', 'AuthController::logout');
 $routes->get('forgot-password', 'AuthController::forgotPassword');
 $routes->post('forgot-password', 'AuthController::attemptForgotPassword');
 
+// Rutas para restablecer contraseña con token
+$routes->get('reset-password', 'AuthController::resetPassword');
+$routes->post('reset-password', 'AuthController::attemptResetPassword');
+
 
 // ===================================================================
 // 2. RUTAS COMUNES (Post-Login)

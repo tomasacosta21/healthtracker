@@ -58,6 +58,7 @@
 
             <div style="text-align: center; margin-top: 20px;">
                 <p>¿No tienes cuenta? <a href="<?= base_url('register') ?>">Regístrate aquí</a></p>
+                <p style="margin-top: 10px;"><a href="<?= base_url('forgot-password') ?>">¿Olvidaste tu contraseña?</a></p>
             </div>
         </form>
     </div>

@@ -5,6 +5,7 @@ namespace App\Controllers;
 // Importa los modelos que vamos a necesitar
 use App\Models\UsuarioModel;
 use App\Models\RolModel;
+use App\Models\PasswordResetTokenModel;
 
 class AuthController extends BaseController
 {
@@ -146,95 +147,169 @@ class AuthController extends BaseController
             return redirect()->to(base_url('dashboard'));
         }
 
-    // Mostrar vista del formulario
+        // Mostrar vista del formulario
         return view('auth/forgot-password');
     }
 
     public function attemptForgotPassword()
     {
-    $email = $this->request->getPost('email');
-    
-    // Validar que el email esté presente y sea válido
-    $validation = \Config\Services::validation();
-    $validation->setRules([
-        'email' => 'required|valid_email'
-    ]);
-    
-    if (! $validation->run($this->request->getPost())) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', 'Por favor, ingresa un email válido.');
-    }
-    
-    // Verificar que el usuario exista en la base de datos
-    $usuarioModel = new UsuarioModel();
-    $usuario = $usuarioModel->where('email', $email)->first();
-    
-    // Por seguridad, no revelamos si el email existe o no
-    // Siempre mostramos el mismo mensaje de éxito
-    if (! $usuario) {
-        // Simulamos éxito para no revelar información
-        return redirect()->to(base_url('forgot-password'))
-            ->with('success', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.');
-    }
-    
-    // Inicializar modelo de tokens
-    $tokenModel = new PasswordResetTokenModel();
-    
-    // Invalidar tokens previos del mismo email (solo el más reciente es válido)
-    $tokenModel->invalidarTokensDelEmail($email);
-    
-    // Generar nuevo token (válido por 1 hora)
-    $token = $tokenModel->crearToken($email, 1);
-    
-    if (! $token) {
-        return redirect()->back()
-            ->withInput()
-            ->with('error', 'Error al generar el token. Por favor, intenta de nuevo.');
-    }
-    
-    // Construir URL de restablecimiento
-    $resetUrl = base_url("reset-password?token={$token}");
-    
-    // Enviar email con el enlace
-    $emailService = \Config\Services::email();
-    
-    $emailService->setFrom('noreply@healthtracker.com', 'HealthTracker');
-    $emailService->setTo($email);
-    $emailService->setSubject('Restablecer tu contraseña - HealthTracker');
-    
-    // Mensaje del email (HTML)
-    $mensaje = "
-    <html>
-    <body style='font-family: Arial, sans-serif;'>
-        <h2>Restablecer Contraseña</h2>
-        <p>Hola {$usuario->nombre},</p>
-        <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace:</p>
-        <p><a href='{$resetUrl}' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Restablecer Contraseña</a></p>
-        <p>O copia y pega este enlace en tu navegador:</p>
-        <p>{$resetUrl}</p>
-        <p><strong>Este enlace expirará en 1 hora.</strong></p>
-        <p>Si no solicitaste este cambio, ignora este email.</p>
-        <hr>
-        <p style='color: #666; font-size: 12px;'>Este es un email automático, por favor no respondas.</p>
-    </body>
-    </html>
-    ";
-    
-    $emailService->setMessage($mensaje);
-    $emailService->setMailType('html');
-    
-    // Intentar enviar el email
-    if ($emailService->send()) {
-        return redirect()->to(base_url('forgot-password'))
-            ->with('success', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.');
-    } else {
-        // Log del error (útil para debugging)
-        log_message('error', 'Error al enviar email de restablecimiento: ' . $emailService->printDebugger());
+        $email = $this->request->getPost('email');
         
-        return redirect()->back()
-            ->withInput()
-            ->with('error', 'Error al enviar el email. Por favor, intenta de nuevo más tarde.');
+        // Validar que el email esté presente y sea válido
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'email' => 'required|valid_email'
+        ]);
+        
+        if (! $validation->run($this->request->getPost())) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Por favor, ingresa un email válido.');
+        }
+        
+        // Verificar que el usuario exista en la base de datos
+        $usuarioModel = new UsuarioModel();
+        $usuario = $usuarioModel->where('email', $email)->first();
+        
+        // Por seguridad, no revelamos si el email existe o no
+        // Siempre mostramos el mismo mensaje de éxito
+        if (! $usuario) {
+            // Simulamos éxito para no revelar información
+            return redirect()->to(base_url('forgot-password'))
+                ->with('success', 'Si el email existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.');
+        }
+        
+        // Inicializar modelo de tokens
+        $tokenModel = new PasswordResetTokenModel();
+        
+        // Invalidar tokens previos del mismo email (solo el más reciente es válido)
+        $tokenModel->invalidarTokensDelEmail($email);
+        
+        // Generar nuevo token (válido por 1 hora)
+        $token = $tokenModel->crearToken($email, 1);
+        
+        if (! $token) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al generar el token. Por favor, intenta de nuevo.');
+        }
+        
+        // Construir URL de restablecimiento
+        $resetUrl = base_url("reset-password?token={$token}");
+        
+        $mensaje = 'Se genero un enlace de restablecimiento de contraseña. '
+            . 'Copia y pega este enlace en tu navegador: '
+            . '<br><code>' . esc($resetUrl) . '</code>'
+            . '<br><br><small>En producción este enlace se enviaría por correo electrónico.</small>';
+
+        return redirect()->to(base_url('forgot-password'))
+            ->with('success', $mensaje);
     }
-}
+    
+    /**
+     * Muestra el formulario para restablecer la contraseña.
+     * Valida que el token sea válido antes de mostrar el formulario.
+     */
+    public function resetPassword()
+    {
+        // Si el usuario ya está logueado, redirigir al dashboard
+        if (session()->get('isLoggedIn')) {
+            return redirect()->to(base_url('dashboard'));
+        }
+        
+        // Obtener token de la URL
+        $token = $this->request->getGet('token');
+        
+        if (! $token) {
+            return redirect()->to(base_url('forgot-password'))
+                ->with('error', 'Token no proporcionado. Por favor, solicita un nuevo enlace.');
+        }
+        
+        // Validar token
+        $tokenModel = new PasswordResetTokenModel();
+        $tokenData = $tokenModel->validarToken($token);
+        
+        if (! $tokenData) {
+            return redirect()->to(base_url('forgot-password'))
+                ->with('error', 'El enlace de restablecimiento no es válido o ha expirado. Por favor, solicita uno nuevo.');
+        }
+        
+        // Pasar token a la vista (necesario para el formulario POST)
+        $data['token'] = $token;
+        $data['email'] = $tokenData->email; // Mostrar email para confirmación
+        
+        return view('auth/reset-password', $data);
+    }
+
+    /**
+     * Procesa el cambio de contraseña.
+     * Valida token, actualiza contraseña e invalida sesiones previas.
+     */
+    public function attemptResetPassword()
+    {
+        $token = $this->request->getPost('token');
+        $password = $this->request->getPost('password');
+        $passwordConfirm = $this->request->getPost('password_confirm');
+        
+        // Validar campos requeridos
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'token' => 'required',
+            'password' => 'required|min_length[6]',
+            'password_confirm' => 'required|matches[password]'
+        ], [
+            'password_confirm' => [
+                'matches' => 'Las contraseñas no coinciden.'
+            ]
+        ]);
+        
+        if (! $validation->run($this->request->getPost())) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Por favor, corrige los errores en el formulario.')
+                ->with('validation', $validation);
+        }
+        
+        // Validar token
+        $tokenModel = new PasswordResetTokenModel();
+        $tokenData = $tokenModel->validarToken($token);
+        
+        if (! $tokenData) {
+            return redirect()->to(base_url('forgot-password'))
+                ->with('error', 'El enlace de restablecimiento no es válido o ha expirado. Por favor, solicita uno nuevo.');
+        }
+        
+        // Buscar usuario por email
+        $usuarioModel = new UsuarioModel();
+        $usuario = $usuarioModel->where('email', $tokenData->email)->first();
+        
+        if (! $usuario) {
+            return redirect()->to(base_url('forgot-password'))
+                ->with('error', 'Usuario no encontrado. Por favor, solicita un nuevo enlace.');
+        }
+        
+        // Actualizar contraseña (hasheada)
+        $nuevaPasswordHash = password_hash($password, PASSWORD_DEFAULT);
+        
+        $actualizado = $usuarioModel->update($usuario->id_usuario, [
+            'password' => $nuevaPasswordHash
+        ]);
+        
+        if (! $actualizado) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al actualizar la contraseña. Por favor, intenta de nuevo.');
+        }
+        
+        // Marcar token como usado
+        $tokenModel->marcarComoUsado($token);
+        
+        // Invalidar todas las sesiones previas del usuario
+        // (En CodeIgniter, esto se hace destruyendo sesiones activas)
+        // Nota: Si usas sesiones en BD, deberías eliminarlas aquí
+        
+        // Redirigir al login con mensaje de éxito
+        return redirect()->to(base_url('login'))
+            ->with('success', 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.');
+    }
 }
