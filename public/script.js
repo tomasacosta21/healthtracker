@@ -1,519 +1,633 @@
-// Mock data storage
+/**
+ * ARCHIVO DE SCRIPT PRINCIPAL DE LA APLICACIÓN
+ * Contiene funciones de UI genéricas y reutilizables.
+ */
 
-// Variable global para guardar el ID del plan actual
-let currentPlanIdForTasks = null;
+// Configuración inicial de CSRF para Fetch
+const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+let csrfToken = csrfTokenMeta ? csrfTokenMeta.content : '';
+let currentPlanId = null;
 
-function openTasksModal(planId) {
-    currentPlanIdForTasks = planId;
-    const modal = document.getElementById("tasks-modal");
-    const title = document.getElementById("tasks-modal-title");
-    const container = document.getElementById("tasks-list-container");
-
-    // Buscamos el plan para obtener el nombre
-    const plan = data.planes.find(p => p.id === planId);
-    title.textContent = `Tareas del Plan: ${plan ? plan.nombre : 'ID ' + planId}`;
-
-    // Filtramos las tareas de la data mock
-    const planTasks = data.tareas.filter(t => t.id_plan === planId);
-
-    if (planTasks.length === 0) {
-        container.innerHTML = '<p class="empty-state" style="padding: 20px 0;">No hay tareas para este plan.</p>';
-    } else {
-        // Construimos una tabla simple para las tareas
-        let tasksTable = `
-            <table id="plan-tasks-table" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #f4f4f4;">
-                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">ID Tarea</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Descripción</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Estado</th>
-                        <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Fecha Programada</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        planTasks.forEach(task => {
-            tasksTable += `
-                <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.id_tarea}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.descripcion}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.estado}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #eee;">${task.fecha_programada || ''}</td>
-                </tr>
-            `;
-        });
-        tasksTable += '</tbody></table>';
-        container.innerHTML = tasksTable;
-    }
-
-    modal.classList.add("active");
-}
-
-function closeTasksModal() {
-    document.getElementById("tasks-modal").classList.remove("active");
-    currentPlanIdForTasks = null;
-}
-
-// Esta función reutiliza el modal principal que ya tienes
-function addNewTaskForPlan() {
-    // Cerramos el modal de tareas
-    closeTasksModal();
-    
-    // Abrimos el modal principal para crear una 'tarea'
-    openModal('tareas', 'create');
-
-    // Usamos un pequeño delay para asegurarnos de que el formulario se haya generado
-    setTimeout(() => {
-        const idPlanInput = document.querySelector('#entity-form input[name="id_plan"]');
-        if (idPlanInput && currentPlanIdForTasks) {
-            // Pre-llenamos el campo del ID del Plan
-            idPlanInput.value = currentPlanIdForTasks;
-        }
-    }, 100);
-}
-
-const data = {
-  roles: [{ nombre: "Administrador" }, { nombre: "Profesional" }, { nombre: "Paciente" }],
-  diagnosticos: [
-    { nombre: "Diabetes Tipo 2", descripcion: "Enfermedad crónica que afecta el metabolismo de la glucosa" },
-    { nombre: "Hipertensión", descripcion: "Presión arterial elevada de forma crónica" },
-  ],
-  medicamentos: [{ nombre: "Metformina" }, { nombre: "Losartán" }, { nombre: "Atorvastatina" }],
-  tipos_tarea: [
-    { id_tipo_tarea: 1, nombre: "Toma de medicamento" },
-    { id_tipo_tarea: 2, nombre: "Ejercicio físico" },
-    { id_tipo_tarea: 3, nombre: "Control médico" },
-  ],
-  usuarios: [
-    {
-      id_usuario: 1,
-      email: "admin@health.com",
-      nombre: "Juan",
-      apellido: "Pérez",
-      password: "****",
-      nombre_rol: "Administrador",
-      descripcion_perfil: "Administrador del sistema",
-    },
-    {
-      id_usuario: 2,
-      email: "doctor@health.com",
-      nombre: "María",
-      apellido: "González",
-      password: "****",
-      nombre_rol: "Profesional",
-      descripcion_perfil: "Médico general",
-    },
-  ],
-  planes: [
-    {
-      id: 1,
-      nombre: "Plan Control Diabetes",
-      descripcion: "Plan de seguimiento para diabetes",
-      id_profesional: 2,
-      id_paciente: 1,
-      nombre_diagnostico: "Diabetes Tipo 2",
-      fecha_inicio: "2025-01-01",
-      fecha_fin: "2025-06-30",
-    },
-  ],
-  tareas: [
-    {
-      id_tarea: 1,
-      id_plan: 1,
-      id_tipo_tarea: 1,
-      num_tarea: 1,
-      descripcion: "Tomar metformina 500mg",
-      fecha_programada: "2025-01-15 08:00:00",
-      fecha_fin_programada: "2025-01-15 09:00:00",
-      estado: "Pendiente",
-      comentarios_paciente: "",
-      fecha_realizacion: null,
-    },
-  ],
-}
-
-let currentEntity = ""
-let currentMode = "create"
-let currentEditIndex = null
-
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
-  const firstEntity = document.querySelector(".entity-section")
-  if (firstEntity) {
-    const entityId = firstEntity.id
-    currentEntity = entityId
-    renderTable(entityId)
-  }
-})
-
-function showEntity(entity) {
-  currentEntity = entity
-  document.querySelectorAll(".entity-section").forEach((el) => el.classList.remove("active"))
-  document.querySelectorAll(".nav-btn").forEach((el) => el.classList.remove("active"))
-  document.getElementById(entity).classList.add("active")
-  event.target.classList.add("active")
-  renderTable(entity)
-}
-
-function renderTable(entity) {
-  const tbody = document.querySelector(`#${entity}-table tbody`)
-  tbody.innerHTML = ""
-
-  if (data[entity].length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay registros disponibles</td></tr>'
-    return
-  }
-
-  data[entity].forEach((item, index) => {
-    const row = document.createElement("tr")
-
-    switch (entity) {
-      case "roles":
-        row.innerHTML = `
-                    <td>${item.nombre}</td>
-                    <td class="actions">
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "diagnosticos":
-        row.innerHTML = `
-                    <td>${item.nombre}</td>
-                    <td>${item.descripcion || ""}</td>
-                    <td class="actions">
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "medicamentos":
-        row.innerHTML = `
-                    <td>${item.nombre}</td>
-                    <td class="actions">
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "tipos_tarea":
-        row.innerHTML = `
-                    <td>${item.id_tipo_tarea}</td>
-                    <td>${item.nombre}</td>
-                    <td class="actions">
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "usuarios":
-        row.innerHTML = `
-                    <td>${item.id_usuario}</td>
-                    <td>${item.email}</td>
-                    <td>${item.nombre}</td>
-                    <td>${item.apellido}</td>
-                    <td>${item.nombre_rol || ""}</td>
-                    <td class="actions">
-                        <button class="btn-view" onclick="viewItem('${entity}', ${index})">Ver</button>
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "planes":
-        row.innerHTML = `
-                    <td>${item.id}</td>
-                    <td>${item.nombre}</td>
-                    <td>${item.id_profesional}</td>
-                    <td>${item.id_paciente}</td>
-                    <td>${item.nombre_diagnostico || ""}</td>
-                    <td class="actions">
-                        <button class="btn-view" onclick="openTasksModal(${item.id})">Ver Tareas</button>
-                    </td>
-                    <td>${item.fecha_inicio || ""}</td>
-                    <td class="actions">
-                        <button class="btn-view" onclick="viewItem('${entity}', ${index})">Ver</button>
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-      case "tareas":
-        row.innerHTML = `
-                    <td>${item.id_tarea}</td>
-                    <td>${item.id_plan}</td>
-                    <td>${item.id_tipo_tarea}</td>
-                    <td>${item.descripcion.substring(0, 30)}...</td>
-                    <td>${item.estado}</td>
-                    <td>${item.fecha_programada || ""}</td>
-                    <td class="actions">
-                        <button class="btn-view" onclick="viewItem('${entity}', ${index})">Ver</button>
-                        <button class="btn-edit" onclick="openModal('${entity}', 'edit', ${index})">Editar</button>
-                        <button class="btn-delete" onclick="deleteItem('${entity}', ${index})">Eliminar</button>
-                    </td>
-                `
-        break
-    }
-
-    tbody.appendChild(row)
-  })
-}
-
-function openModal(entity, mode, index = null) {
-  currentEntity = entity
-  currentMode = mode
-  currentEditIndex = index
-
-  const modal = document.getElementById("modal")
-  const modalTitle = document.getElementById("modal-title")
-  const formFields = document.getElementById("form-fields")
-
-  modalTitle.textContent = mode === "create" ? `Nuevo ${getEntityLabel(entity)}` : `Editar ${getEntityLabel(entity)}`
-
-  formFields.innerHTML = generateFormFields(entity, mode === "edit" ? data[entity][index] : null)
-
-  modal.classList.add("active")
-}
-
-function closeModal() {
-  document.getElementById("modal").classList.remove("active")
-  document.getElementById("entity-form").reset()
-}
-
-function getEntityLabel(entity) {
-  const labels = {
-    roles: "Rol",
-    diagnosticos: "Diagnóstico",
-    medicamentos: "Medicamento",
-    tipos_tarea: "Tipo de Tarea",
-    usuarios: "Usuario",
-    planes: "Plan",
-    tareas: "Tarea",
-  }
-  return labels[entity]
-}
-
-function generateFormFields(entity, item) {
-  let fields = ""
-
-  switch (entity) {
-    case "roles":
-      fields = `
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-            `
-      break
-    case "diagnosticos":
-      fields = `
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea name="descripcion">${item?.descripcion || ""}</textarea>
-                </div>
-            `
-      break
-    case "medicamentos":
-      fields = `
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-            `
-      break
-    case "tipos_tarea":
-      fields = `
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-            `
-      break
-    case "usuarios":
-      fields = `
-                <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" value="${item?.email || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Apellido *</label>
-                    <input type="text" name="apellido" value="${item?.apellido || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Password *</label>
-                    <input type="password" name="password" value="${item?.password || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Rol</label>
-                    <select name="nombre_rol">
-                        <option value="">Seleccionar...</option>
-                        ${data.roles.map((r) => `<option value="${r.nombre}" ${item?.nombre_rol === r.nombre ? "selected" : ""}>${r.nombre}</option>`).join("")}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Descripción del Perfil</label>
-                    <textarea name="descripcion_perfil">${item?.descripcion_perfil || ""}</textarea>
-                </div>
-            `
-      break
-    case "planes":
-      fields = `
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" name="nombre" value="${item?.nombre || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea name="descripcion">${item?.descripcion || ""}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>ID Profesional *</label>
-                    <input type="number" name="id_profesional" value="${item?.id_profesional || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>ID Paciente *</label>
-                    <input type="number" name="id_paciente" value="${item?.id_paciente || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Diagnóstico</label>
-                    <select name="nombre_diagnostico">
-                        <option value="">Seleccionar...</option>
-                        ${data.diagnosticos.map((d) => `<option value="${d.nombre}" ${item?.nombre_diagnostico === d.nombre ? "selected" : ""}>${d.nombre}</option>`).join("")}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Fecha Inicio</label>
-                    <input type="date" name="fecha_inicio" value="${item?.fecha_inicio || ""}">
-                </div>
-                <div class="form-group">
-                    <label>Fecha Fin</label>
-                    <input type="date" name="fecha_fin" value="${item?.fecha_fin || ""}">
-                </div>
-            `
-      break
-    case "tareas":
-      fields = `
-                <div class="form-group">
-                    <label>ID Plan *</label>
-                    <input type="number" name="id_plan" value="${item?.id_plan || ""}" required>
-                </div>
-                <div class="form-group">
-                    <label>Tipo de Tarea *</label>
-                    <select name="id_tipo_tarea" required>
-                        <option value="">Seleccionar...</option>
-                        ${data.tipos_tarea.map((t) => `<option value="${t.id_tipo_tarea}" ${item?.id_tipo_tarea === t.id_tipo_tarea ? "selected" : ""}>${t.nombre}</option>`).join("")}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Número de Tarea</label>
-                    <input type="number" name="num_tarea" value="${item?.num_tarea || ""}">
-                </div>
-                <div class="form-group">
-                    <label>Descripción *</label>
-                    <textarea name="descripcion" required>${item?.descripcion || ""}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>Fecha Programada</label>
-                    <input type="datetime-local" name="fecha_programada" value="${item?.fecha_programada?.replace(" ", "T") || ""}">
-                </div>
-                <div class="form-group">
-                    <label>Fecha Fin Programada</label>
-                    <input type="datetime-local" name="fecha_fin_programada" value="${item?.fecha_fin_programada?.replace(" ", "T") || ""}">
-                </div>
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select name="estado">
-                        <option value="Pendiente" ${item?.estado === "Pendiente" ? "selected" : ""}>Pendiente</option>
-                        <option value="En Progreso" ${item?.estado === "En Progreso" ? "selected" : ""}>En Progreso</option>
-                        <option value="Completada" ${item?.estado === "Completada" ? "selected" : ""}>Completada</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Comentarios del Paciente</label>
-                    <textarea name="comentarios_paciente">${item?.comentarios_paciente || ""}</textarea>
-                </div>
-            `
-      break
-  }
-
-  return fields
-}
-
-document.getElementById("entity-form").addEventListener("submit", (e) => {
-  e.preventDefault()
-  const formData = new FormData(e.target)
-  const newItem = {}
-
-  for (const [key, value] of formData.entries()) {
-    newItem[key] = value
-  }
-
-  if (currentMode === "create") {
-    // Generate ID for entities that need it
-    if (["tipos_tarea", "usuarios", "planes", "tareas"].includes(currentEntity)) {
-      const idField =
-        currentEntity === "tipos_tarea"
-          ? "id_tipo_tarea"
-          : currentEntity === "usuarios"
-            ? "id_usuario"
-            : currentEntity === "tareas"
-              ? "id_tarea"
-              : "id"
-      const maxId = data[currentEntity].length > 0 ? Math.max(...data[currentEntity].map((item) => item[idField])) : 0
-      newItem[idField] = maxId + 1
-    }
-    data[currentEntity].push(newItem)
-  } else {
-    // Preserve ID fields when editing
-    const idField =
-      currentEntity === "tipos_tarea"
-        ? "id_tipo_tarea"
-        : currentEntity === "usuarios"
-          ? "id_usuario"
-          : currentEntity === "tareas"
-            ? "id_tarea"
-            : currentEntity === "planes"
-              ? "id"
-              : null
-
-    if (idField) {
-      newItem[idField] = data[currentEntity][currentEditIndex][idField]
-    }
-
-    data[currentEntity][currentEditIndex] = newItem
-  }
-
-  renderTable(currentEntity)
-  closeModal()
-})
-
-function deleteItem(entity, index) {
-  if (confirm("¿Está seguro de eliminar este registro?")) {
-    data[entity].splice(index, 1)
-    renderTable(entity)
-  }
-}
-
-function viewItem(entity, index) {
-  const item = data[entity][index]
-  alert(JSON.stringify(item, null, 2))
+function scrollToEntity(entity, navElement) {
+    const el = document.getElementById(entity);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
 function filterTable(entity) {
-  const input = event.target.value.toLowerCase()
-  const table = document.querySelector(`#${entity}-table tbody`)
-  const rows = table.getElementsByTagName("tr")
+    const input = event.target.value.toLowerCase();
+    const table = document.querySelector(`#${entity}-table tbody`);
+    if (!table) return;
 
-  for (const row of rows) {
-    const text = row.textContent.toLowerCase()
-    row.style.display = text.includes(input) ? "" : "none"
-  }
+    const rows = table.getElementsByTagName("tr");
+    for (const row of rows) {
+        if (row.classList.contains("empty-state-row")) continue;
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    }
 }
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove("active");
+    }
+}
+
+/**
+ * Abre el modal principal.
+ */
+function openModal(entity, mode, element = null) {
+    const modal = document.getElementById("modal");
+    if (!modal) return;
+
+    const modalTitle = document.getElementById("modal-title");
+    const form = document.getElementById("entity-form");
+    
+    // Limpiar inputs hidden previos de tareas (si existen) y la lista visual
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    const listContainer = document.getElementById('plan-tasks-list');
+    if (inputsContainer) inputsContainer.innerHTML = '';
+    if (listContainer) listContainer.innerHTML = '';
+
+    form.reset();
+    
+    // Reset manual de selects para que no se queden pegados
+    const selects = form.querySelectorAll('select');
+    selects.forEach(s => s.selectedIndex = 0);
+
+    // Construir base URL usando meta base-url y rol del servidor si está disponible
+    const baseMeta = document.querySelector('meta[name="base-url"]')?.content.replace(/\/$/, '') || '';
+    const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
+    const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
+
+    if (mode === 'create') {
+        modalTitle.textContent = `Nuevo ${entity}`;
+        form.action = `${baseUrl}/${entity}`; // POST normal
+        
+        // Resetear ID y Method spoofing
+        const idInput = document.getElementById('form-id');
+        if (idInput) idInput.value = '';
+        document.getElementById('form-method').value = 'POST';
+
+        modal.classList.add("active");
+
+    } else if (mode === 'edit' && element) {
+        const id = element.dataset.id;
+        modalTitle.textContent = `Editar ${entity}`;
+        form.action = `${baseUrl}/${entity}/${id}`; // La URL base
+        document.getElementById('form-method').value = 'PUT'; // Method Spoofing para CI4
+
+        // Rellenar datos
+        const data = element.dataset;
+        for (const key in data) {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input) {
+                if (input.type === 'date' && data[key]) {
+                    input.value = data[key].split(' ')[0];
+                } else if (input.type === 'datetime-local' && data[key]) {
+                    input.value = data[key].replace(' ', 'T');
+                } else {
+                    input.value = data[key];
+                }
+            }
+        }
+        
+        const idInput = document.getElementById('form-id');
+        if (idInput) idInput.value = id;
+
+        modal.classList.add("active");
+    }
+}
+
+function deleteRecord(entity, id) {
+    if (!confirm("¿Está seguro de eliminar este registro?")) return;
+
+    // Construir base URL seguro para llamadas a recursos (no depender de la ruta actual)
+    const baseMeta = document.querySelector('meta[name="base-url"]')?.content.replace(/\/$/, '') || '';
+    const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
+    const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
+    
+    // Usamos Fetch para delete también, es más limpio
+    fetch(`${baseUrl}/${entity}/${id}`, {
+        method: 'POST', // CI4 resource delete suele ser via POST con _method=DELETE o DELETE directo si server lo soporta
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: '_method=DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            alert('Eliminado correctamente');
+            location.reload();
+        } else {
+            alert('Error al eliminar: ' + (data.message || 'Desconocido'));
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+/* ====== Submodal y gestión de tareas en cliente ====== */
+
+function openTaskCreator() {
+    const modal = document.getElementById('task-creator-modal');
+    if (!modal) return;
+    
+    // Reset fields
+    document.getElementById('task-descripcion').value = '';
+    document.getElementById('task-fecha').value = '';
+    document.getElementById('task-tipo').selectedIndex = 0;
+    
+    modal.classList.add('active');
+}
+
+function closeTaskCreator() {
+    const modal = document.getElementById('task-creator-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function addTaskToPlan() {
+    const desc = document.getElementById('task-descripcion').value.trim();
+    const fecha = document.getElementById('task-fecha').value;
+    
+    // Obtener datos del SELECT (ID y Texto)
+    const tipoSelect = document.getElementById('task-tipo');
+    const tipoId = tipoSelect.value; // El ID (para la BD)
+    const tipoNombre = tipoSelect.options[tipoSelect.selectedIndex].text; // El Nombre (para mostrar)
+    const medSelect = document.getElementById('task-medicamento-init');
+    const medNombre = medSelect.value; // El value es el nombre del medicamento
+
+    if (!desc) {
+        alert('La descripción es obligatoria.');
+        return;
+    }
+    if (!tipoId) {
+        alert('Debes seleccionar un tipo de tarea.');
+        return;
+    }
+    if (!fecha) {
+        alert('La fecha es obligatoria.');
+        return;
+    }
+
+    const key = 't' + Date.now(); // ID temporal único
+
+    // 1. Añadir a la lista VISIBLE (Usuario ve nombres bonitos)
+    const list = document.getElementById('plan-tasks-list');
+    const li = document.createElement('li');
+    li.dataset.taskKey = key;
+    li.style.padding = "10px";
+    li.style.borderBottom = "1px solid #eee";
+    li.style.display = "flex";
+    li.style.justifyContent = "space-between";
+    li.style.alignItems = "center";
+    const medInfo = medNombre ? `<br><small style="color:#000033;"> ${escapeHtml(medNombre)}</small>` : '';
+    
+    li.innerHTML = `
+        <div>
+            <strong>${escapeHtml(tipoNombre)}</strong>: ${escapeHtml(desc)} <br>
+            <small style="color: #555;">📅 ${fecha.replace('T',' ')}</small>
+        </div>
+        <button type="button" onclick="removeTask('${key}')" class="btn-delete" style="padding: 4px 8px; font-size: 12px;">Quitar</button>
+    `;
+    list.appendChild(li);
+
+    // 2. Añadir inputs HIDDEN (Servidor recibe IDs)
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    
+    createHiddenInput(inputsContainer, `tareas[${key}][descripcion]`, desc, key);
+    createHiddenInput(inputsContainer, `tareas[${key}][fecha_programada]`, fecha, key);
+    createHiddenInput(inputsContainer, `tareas[${key}][tipo]`, tipoId, key); // Aquí va el ID
+    if(medNombre) {
+        createHiddenInput(inputsContainer, `tareas[${key}][nombre_medicamento]`, medNombre, key);
+    }
+
+    closeTaskCreator();
+
+    document.getElementById('task-descripcion').value = '';
+    document.getElementById('task-fecha').value = '';
+    document.getElementById('task-tipo').selectedIndex = 0;
+    if(medSelect) medSelect.selectedIndex = 0;
+}
+
+function togglePlanStatus(planId) {
+    if(!confirm("¿Deseas cambiar el estado del plan (Vigente <-> Finalizado)?")) return;
+
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch(`${base}/profesional/planes/${planId}/estado`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        }
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.success) {
+            // Actualizar UI sin recargar
+            const badge = document.getElementById(`badge-estado-${planId}`);
+            if(badge) {
+                badge.textContent = res.nuevo_estado;
+                if(res.nuevo_estado === 'Vigente') {
+                    badge.style.backgroundColor = '#d1fae5';
+                    badge.style.color = '#065f46';
+                } else {
+                    badge.style.backgroundColor = '#e5e7eb';
+                    badge.style.color = '#374151';
+                }
+            }
+            alert(res.message);
+        } else {
+            alert('Error: ' + res.message);
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function createHiddenInput(container, name, value, key) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value;
+    input.dataset.taskKey = key;
+    container.appendChild(input);
+}
+
+function removeTask(key) {
+    // Remove visual
+    const list = document.getElementById('plan-tasks-list');
+    const items = list.querySelectorAll('li');
+    items.forEach(li => { if (li.dataset.taskKey === key) li.remove(); });
+
+    // Remove data
+    const inputsContainer = document.getElementById('plan-tasks-inputs');
+    const hiddenInputs = inputsContainer.querySelectorAll(`input[data-task-key="${key}"]`);
+    hiddenInputs.forEach(i => i.remove());
+}
+
+/* ====== Modal lista Tareas (Ajax) ====== */
+
+function openTasksModal(planId) {
+    currentPlanId = planId; // GUARDAMOS EL ID DEL PLAN
+    
+    // Resetear formulario de nueva tarea
+    const formDiv = document.getElementById('new-task-form');
+    if(formDiv) formDiv.style.display = 'none';
+    
+    // Cargar tipos de tarea en el select del formulario nuevo (si no están cargados)
+    const typeSelect = document.getElementById('new-task-type');
+    if (typeSelect && typeSelect.options.length <= 1 && window.serverData && window.serverData.tipos) {
+        window.serverData.tipos.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id_tipo_tarea;
+            opt.textContent = t.nombre;
+            typeSelect.appendChild(opt);
+        });
+    }
+
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/planes/${planId}/tareas`;
+
+    const list = document.getElementById('tasks-list');
+    if (!list) return alert('Modal de tareas no encontrado en la página.');
+    list.innerHTML = '<li style="padding:10px;color:#666;">Cargando...</li>';
+
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(json => {
+            if (!json || !json.success) {
+                list.innerHTML = '<li style="padding:10px;color:#c00;">No se pudieron obtener las tareas.</li>';
+                return;
+            }
+
+            list.innerHTML = '';
+            const tipos = (window.serverData && window.serverData.tipos) ? window.serverData.tipos : [];
+            const tipoMap = {};
+            tipos.forEach(t => { tipoMap[t.id_tipo_tarea] = t.nombre; });
+
+            if (!json.data || json.data.length === 0) {
+                list.innerHTML = '<li class="empty-state" style="padding:12px;color:#666;">No hay tareas para este plan.</li>';
+            } else {
+                // Ordenar visualmente por num_tarea si viene del server, o fecha
+                json.data.sort((a, b) => a.num_tarea - b.num_tarea);
+
+                json.data.forEach(t => {
+                    const li = document.createElement('li');
+                    li.style.padding = '10px';
+                    li.style.borderBottom = '1px solid #eee';
+                    const tipoNombre = tipoMap[t.id_tipo_tarea] || (t.id_tipo_tarea || 'Tipo N/D');
+                    const fecha = t.fecha_programada ? t.fecha_programada.replace('T',' ') : 'Sin fecha';
+                    
+                    li.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                          <div>
+                            <strong>${t.num_tarea}. ${escapeHtml(tipoNombre)}:</strong> ${escapeHtml(t.descripcion || '')} <br>
+                            <small style="color:#666">📅 ${escapeHtml(fecha)} — Estado: <em>${escapeHtml(t.estado)}</em></small>
+                          </div>
+                          <div style="display:flex; gap:8px;">
+                            <button class="btn-delete" onclick="deleteTask(${t.id_tarea})">Eliminar</button>
+                          </div>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            }
+
+            const modal = document.getElementById('tasks-modal');
+            if (modal) modal.classList.add('active');
+        })
+        .catch(err => {
+            console.error(err);
+            list.innerHTML = '<li style="padding:10px;color:#c00;">Error al solicitar las tareas.</li>';
+        });
+}
+
+function toggleNewTaskForm() {
+    const form = document.getElementById('new-task-form');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        // Limpiar inputs
+        document.getElementById('new-task-desc').value = '';
+        document.getElementById('new-task-date').value = '';
+        document.getElementById('new-task-type').selectedIndex = 0;
+        const medSelect = document.getElementById('new-task-medicamento');
+        if(medSelect) medSelect.selectedIndex = 0;
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+function saveNewTask(e) {
+    e.preventDefault();
+    
+    if (!currentPlanId) return alert("Error: ID de plan perdido.");
+
+    const tipo = document.getElementById('new-task-type').value;
+    const desc = document.getElementById('new-task-desc').value;
+    const fecha = document.getElementById('new-task-date').value;
+    const medicamento = document.getElementById('new-task-medicamento').value;
+
+    if(!tipo || !desc || !fecha) return alert("Todos los campos son obligatorios");
+
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    // Preparamos los datos como FormData
+    const formData = new FormData();
+    formData.append('id_plan', currentPlanId);
+    formData.append('id_tipo_tarea', tipo);
+    formData.append('descripcion', desc);
+    formData.append('fecha_programada', fecha);
+    if (medicamento) {
+        formData.append('nombre_medicamento', medicamento);
+    }
+
+    fetch(`${base}/profesional/tareas`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        },
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Ocultar formulario
+            toggleNewTaskForm();
+            // Recargar la lista de tareas
+            openTasksModal(currentPlanId); 
+        } else {
+            alert('Error: ' + (data.message || JSON.stringify(data.errors)));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Error de conexión al guardar tarea.');
+    });
+}
+
+function closeTasksModal() {
+    const modal = document.getElementById('tasks-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function deleteTask(idTarea) {
+    if (!confirm('¿Eliminar esta tarea?')) return;
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/tareas/${idTarea}`;
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        },
+        body: '_method=DELETE'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success' || data.success) {
+            alert('Tarea eliminada');
+            // Refrescar lista
+            const modal = document.getElementById('tasks-modal');
+            if (modal && modal.classList.contains('active')) {
+                // Recuperar planId from URL in header or re-open: easiest is to reload modal content via last opened plan id
+                // For simplicity reload page
+                location.reload();
+            }
+        } else {
+            alert('Error al eliminar: ' + (data.message || JSON.stringify(data)));
+        }
+    })
+    .catch(err => { console.error(err); alert('Error de comunicación.'); });
+}
+
+function openProgressModal(planId) {
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const url = `${base}/profesional/planes/${planId}/tareas`;
+
+    // Resetear vista del modal
+    document.getElementById('progress-percent-text').textContent = '0%';
+    document.getElementById('progress-bar-fill').style.width = '0%';
+    const container = document.getElementById('progress-tasks-list');
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Cargando...</div>';
+
+    // Abrir modal
+    const modal = document.getElementById('progress-modal');
+    if (modal) modal.classList.add('active');
+
+    // Fetch datos
+    fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(json => {
+        if (!json.success) {
+            container.innerHTML = '<div style="color:red; text-align:center;">Error al cargar datos.</div>';
+            return;
+        }
+
+        const tasks = json.data || [];
+        const total = tasks.length;
+        
+        if (total === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Este plan no tiene tareas asignadas aún.</div>';
+            return;
+        }
+
+        // 1. Calcular Progreso
+        const completedCount = tasks.filter(t => t.estado === 'Completada').length;
+        const percent = Math.round((completedCount / total) * 100);
+
+        // Actualizar barra (con un pequeño delay para que se vea la animación)
+        setTimeout(() => {
+            document.getElementById('progress-bar-fill').style.width = `${percent}%`;
+            document.getElementById('progress-percent-text').textContent = `${percent}%`;
+        }, 100);
+
+        // 2. Renderizar Lista
+        container.innerHTML = '';
+        
+        // Ordenamos para ver las completadas o pendientes primero? 
+        // Generalmente es útil ver el orden cronológico (fecha_programada)
+        tasks.sort((a, b) => new Date(a.fecha_programada) - new Date(b.fecha_programada));
+
+        tasks.forEach(t => {
+            const item = document.createElement('div');
+            item.style.padding = '15px';
+            item.style.marginBottom = '10px';
+            item.style.backgroundColor = '#fff';
+            item.style.border = '1px solid #eee';
+            item.style.borderRadius = '8px';
+            item.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+
+            // Estilos según estado
+            const isCompleted = t.estado === 'Completada';
+            const badgeColor = isCompleted ? '#d1fae5' : '#fff7ed'; // Verde claro / Naranja claro
+            const textColor = isCompleted ? '#065f46' : '#9a3412';  // Verde oscuro / Naranja oscuro
+            const icon = isCompleted ? '✅' : '⏳';
+
+            // HTML para el comentario (solo si existe)
+            let commentHtml = '';
+            if (t.comentarios_paciente && t.comentarios_paciente.trim() !== '') {
+                commentHtml = `
+                    <div style="margin-top: 10px; background-color: #f8f9fa; padding: 10px; border-left: 4px solid #000033; border-radius: 4px;">
+                        <strong style="font-size: 0.85em; color: #555;">💬 Comentario del Paciente:</strong>
+                        <p style="margin: 5px 0 0 0; font-style: italic; color: #333;">"${escapeHtml(t.comentarios_paciente)}"</p>
+                    </div>
+                `;
+            }
+
+            // Fecha formateada
+            const fecha = t.fecha_programada ? t.fecha_programada.replace('T', ' ') : 'Sin fecha';
+
+            item.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div style="flex: 1; padding-right: 10px;">
+                        <div style="font-weight:bold; font-size:1.05em; color:#222;">${escapeHtml(t.descripcion)}</div>
+                        <div style="font-size:0.85em; color:#666; margin-top:4px;">
+                            📅 ${escapeHtml(fecha)} &nbsp;|&nbsp; Tarea #${t.num_tarea}
+                        </div>
+                    </div>
+                    <span style="background-color:${badgeColor}; color:${textColor}; padding: 4px 10px; border-radius: 15px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">
+                        ${icon} ${escapeHtml(t.estado)}
+                    </span>
+                </div>
+                ${commentHtml}
+            `;
+            container.appendChild(item);
+        });
+
+    })
+    .catch(err => {
+        console.error(err);
+        container.innerHTML = '<div style="color:red; text-align:center;">Error de conexión.</div>';
+    });
+}
+
+
+function escapeHtml(text) {
+    if (!text) return text;
+    return String(text).replace(/[&<>\"]+/g, function (s) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]);
+    });
+}
+
+// Listener para el envío AJAX del formulario principal
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('entity-form');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop envío normal
+
+            const formData = new FormData(this);
+            const url = this.action;
+            
+            // Obtener headers (especialmente CSRF si cambia)
+            const currentCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRF-TOKEN": currentCsrf
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message || "Guardado correctamente");
+                    closeModal('modal');
+                    location.reload();
+                } else {
+                    let errorMsg = "Errores:\n";
+                    if (data.errors) {
+                        for (const [field, msg] of Object.entries(data.errors)) {
+                            errorMsg += `- ${msg}\n`;
+                        }
+                    } else {
+                        errorMsg += data.message || 'Error desconocido';
+                    }
+                    alert(errorMsg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Error de comunicación con el servidor. Ver consola.");
+            });
+        });
+    }
+});
+
+// Exponer funciones globales
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.deleteRecord = deleteRecord;
+window.filterTable = filterTable;
+window.openTaskCreator = openTaskCreator;
+window.closeTaskCreator = closeTaskCreator;
+window.addTaskToPlan = addTaskToPlan;
+window.removeTask = removeTask;
+window.openTasksModal = openTasksModal;
+window.closeTasksModal = closeTasksModal;
+window.deleteTask = deleteTask;
+window.toggleNewTaskForm = toggleNewTaskForm;
+window.saveNewTask = saveNewTask;
+window.openProgressModal = openProgressModal;
+window.markTaskComplete = markTaskComplete;
+window.togglePlanStatus = togglePlanStatus;

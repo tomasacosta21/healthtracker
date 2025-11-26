@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Models\PlanModel;
 
 class UsuarioModel extends Model
 {
@@ -32,6 +33,20 @@ class UsuarioModel extends Model
     public function getPacientes()
     {
         return $this->where('nombre_rol', 'paciente')->findAll();
+    }
+
+    // SELECT * FROM usuarios u
+    // JOIN planes p ON u.id_usuario = p.id_paciente
+    // WHERE p.id_profesional = $idProfesional
+    public function getPacientesPorProfesional($idProfesional){
+        $data = $this->db->table('usuarios u')
+            ->select('u.*') 
+            ->join('planes p', 'u.id_usuario = p.id_paciente')
+            ->where('p.id_profesional', $idProfesional)
+            ->groupBy('u.id_usuario')
+            ->get()
+            ->getResult();
+        return $data;
     }
 
     public function getProfesionales()

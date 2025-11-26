@@ -7,95 +7,149 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // ===================================================================
-// RUTAS PÚBLICAS
-// (Home público y Autenticación)
+// 1. RUTAS PÚBLICAS (Auth y Landing)
 // ===================================================================
-$routes->get('/', 'Home::index'); // Home público del portal [cite: 51, 655]
+$routes->get('/', 'Home::index'); // Landing pública
 
+// HU-01 y HU-02: Registro y Autenticación
+// (Entidad: Usuario - Manejado por AuthController para lógica de acceso)
 $routes->get('login', 'AuthController::login');
 $routes->post('login', 'AuthController::attemptLogin');
 $routes->get('register', 'AuthController::register');
 $routes->post('register', 'AuthController::attemptRegister');
 $routes->get('logout', 'AuthController::logout');
 
+// HU-04: Restablecer contraseña
+$routes->get('forgot-password', 'AuthController::forgotPassword');
+$routes->post('forgot-password', 'AuthController::attemptForgotPassword');
+
+// Rutas para restablecer contraseña con token
+$routes->get('reset-password', 'AuthController::resetPassword');
+$routes->post('reset-password', 'AuthController::attemptResetPassword');
+
+
 // ===================================================================
-// RUTAS COMUNES (POST-LOGIN)
+// 2. RUTAS COMUNES (Post-Login)
 // ===================================================================
-// (Requieren estar logueado, sin importar el rol)
+// Requieren que el usuario esté logueado, sin importar su rol.
 $routes->group('', ['filter' => 'auth'], static function ($routes) {
-    // Redirige a /admin, /profesional o /paciente según el rol
+    
+    // Redirección inteligente al dashboard correspondiente según rol
     $routes->get('dashboard', 'DashboardController::index');
+    
+    // HU-02: Perfil de usuario (Ver mi propio perfil)
+    // Entidad: Usuario
+    $routes->get('perfil', 'UsuarioController::miPerfil');
+    $routes->post('perfil', 'UsuarioController::actualizarPerfil');
 });
 
+
 // ===================================================================
-// RUTAS DE ADMINISTRADOR
+// 3. RUTAS DE ADMINISTRADOR
 // ===================================================================
-// (Requieren estar logueado como 'Administrador')
+// Filtro: auth:Administrador
 $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($routes) {
-    $routes->get('/', 'AdminController::index');
+    
+    // Dashboard Admin (HU-12 - Vista global)
+    // Entidad: Metricas (o Dashboard)
+    $routes->get('/', 'DashboardController::adminDashboard');
 
-    // ABMC de Usuarios 
-    // (Usa 'resource' para crear automáticamente las rutas GET, POST, PUT, DELETE)
+    // HU-03: ABMC Usuarios
+    // Entidad: Usuario
+    // Crea rutas: index, show, new, create, edit, update, delete
     $routes->resource('usuarios', [
-        'controller' => 'AdminController',
-        'except' => 'show', // Usamos 'index' para la lista
+        'controller' => 'UsuarioController',
         'placeholder' => '(:num)',
-        'as' => 'admin.usuarios' // (Opcional, para nombrar rutas)
-    ]);
-    
-    // ABMC de Diagnósticos 
-    $routes->resource('diagnosticos', [
-        'controller' => 'AdminController',
-        'placeholder' => '(:num)',
-        'as' => 'admin.diagnosticos'
+        'except' => 'show' // Si no necesitas vista detalle individual
     ]);
 
-    // ABMC de Planes Estandarizados 
-    $routes->resource('planes-estandar', [
-        'controller' => 'AdminController',
+    // HU-06: Gestión de Plantillas de Planes (Planes estandarizados)
+    // Entidad: Plan (o PlanPlantilla si creas ese modelo específico)
+    // Usamos PlanController pero quizás filtrando por tipo 'plantilla' internamente
+    $routes->resource('planes-plantillas', [
+        'controller' => 'PlanController',
         'placeholder' => '(:num)',
-        'as' => 'admin.planesEstandar'
     ]);
+
+    // ABMC de Catálogos (Tablas: diagnosticos, medicamento, tipos_tarea, roles)
+    // Entidad: Diagnostico
+    $routes->resource('diagnosticos', ['controller' => 'DiagnosticoController']);
+    // Entidad: Medicamento
+    $routes->resource('medicamentos', ['controller' => 'MedicamentoController']);
+    // Entidad: TipoTarea
+    $routes->resource('tipos-tarea', ['controller' => 'TipoTareaController']);
+    // Entidad: Rol
+    $routes->resource('roles', ['controller' => 'RolController']);
+    $routes->get('planes-global', 'PlanController::globalView');
+    $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
 });
 
+
 // ===================================================================
-// RUTAS DE PROFESIONAL
+// 4. RUTAS DE PROFESIONAL
 // ===================================================================
-// (Requieren estar logueado como 'Profesional')
+// Filtro: auth:Profesional
 $routes->group('profesional', ['filter' => 'auth:Profesional'], static function ($routes) {
-    $routes->get('/', 'ProfesionalController::index');
 
-    // ABMC de Planes de Cuidado (para pacientes) 
+    // Dashboard Profesional (HU-10 - Métricas)
+    $routes->get('/', 'DashboardController::profesionalDashboard');
+
+    // Gestión de Pacientes (Listado solo de mis pacientes)
+    // Entidad: Usuario (El experto es UsuarioController)
+    $routes->get('mis-pacientes', 'UsuarioController::listarPacientes');
+
+    // HU-05: Crear y Gestionar Planes de Cuidado
+    // Entidad: Plan
     $routes->resource('planes', [
-        'controller' => 'ProfesionalController',
+        'controller' => 'PlanController',
         'placeholder' => '(:num)',
-        'as' => 'profesional.planes'
+        // Limitamos a las acciones que el profesional puede hacer
+        // index (listar mis planes), create, store, edit, update, delete (baja lógica)
     ]);
+    $routes->resource('medicamentos', ['controller' => 'MedicamentoController']);
+    $routes->resource('tipos-tarea', ['controller' => 'TipoTareaController']);
+    $routes->resource('diagnosticos', ['controller' => 'DiagnosticoController']);
 
-    // Validación de tareas 
-    $routes->post('tareas/validar/(:num)', 'ProfesionalController::validarCumplimiento/$1', ['as' => 'profesional.validar']);
+    // HU-05a: ABMC de Tareas dentro de un plan
+    // Entidad: Tarea
+    $routes->resource('tareas', [
+        'controller' => 'TareaController',
+        'placeholder' => '(:num)',
+    ]);
     
-    // Estadísticas 
-    $routes->get('estadisticas', 'ProfesionalController::estadisticas', ['as' => 'profesional.stats']);
+    // Endpoint específico para obtener tareas de un plan (útil para AJAX/Modales)
+    $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
+
+    // HU-09: Validar Cumplimiento (Profesional cambia estado del plan)
+    // Entidad: Plan (Acción específica de negocio)
+    $routes->post('planes/(:num)/estado', 'PlanController::cambiarEstado/$1');
 });
 
+
 // ===================================================================
-// RUTAS DE PACIENTE
+// 5. RUTAS DE PACIENTE
 // ===================================================================
-// (Requieren estar logueado como 'Paciente')
+// Filtro: auth:Paciente
 $routes->group('paciente', ['filter' => 'auth:Paciente'], static function ($routes) {
-    $routes->get('/', 'PacienteController::index'); // "Mi Perfil" 
 
-    // Registro de cumplimiento de tareas 
-    $routes->post('tareas/cumplir/(:num)', 'PacienteController::registrarCumplimiento/$1', ['as' => 'paciente.cumplir']);
+    // Dashboard Paciente (HU-07 - Ver mis planes y progreso)
+    $routes->get('/', 'DashboardController::pacienteDashboard');
 
-    // Gestión de Documentación Médica 
+    // HU-07: Consultar mis planes (Read-only para el paciente)
+    // Entidad: Plan
+    $routes->get('mis-planes', 'PlanController::index'); 
+    $routes->get('mis-planes/(:num)', 'PlanController::show/$1');
+
+    // HU-08: Registrar Progreso (Completar tarea)
+    // Entidad: Tarea
+    $routes->post('tareas/(:num)/completar', 'TareaController::registrarProgreso/$1');
+
+    // HU-11: Documentación Médica
+    // Entidad: Documento (Si existe tabla documentos, sino va en UsuarioController o PlanController)
+    // Asumiendo un DocumentoController:
     $routes->resource('documentos', [
-        'controller' => 'PacienteController',
+        'controller' => 'DocumentoController',
         'placeholder' => '(:num)',
-        'as' => 'paciente.documentos'
+        'only' => ['index', 'create', 'store', 'show', 'delete'] // Paciente sube y ve
     ]);
-
-    // Historial de Tratamientos 
-    $routes->get('historial', 'PacienteController::historial', ['as' => 'paciente.historial']);
 });

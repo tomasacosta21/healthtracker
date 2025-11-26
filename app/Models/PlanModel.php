@@ -10,7 +10,7 @@ class PlanModel extends Model
     protected $primaryKey       = 'id';
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['nombre', 'descripcion', 'id_profesional', 'id_paciente', 'nombre_diagnostico', 'fecha_inicio', 'fecha_fin'];
+    protected $allowedFields    = ['nombre', 'descripcion', 'id_profesional', 'id_paciente', 'nombre_diagnostico', 'fecha_inicio', 'fecha_fin', 'estado'];
     protected $useTimestamps    = false;
 
     protected $validationRules = [
@@ -25,11 +25,11 @@ class PlanModel extends Model
     public function getPlanCompleto($idPlan)
     {
         return $this->select('planes.*, 
-                             prof.nombre as nombre_profesional, 
-                             prof.apellido as apellido_profesional,
-                             pac.nombre as nombre_paciente, 
-                             pac.apellido as apellido_paciente,
-                             diagnosticos.descripcion as descripcion_diagnostico')
+                            prof.nombre as nombre_profesional, 
+                            prof.apellido as apellido_profesional,
+                            pac.nombre as nombre_paciente, 
+                            pac.apellido as apellido_paciente,
+                            diagnosticos.descripcion as descripcion_diagnostico')
                     ->join('usuarios as prof', 'prof.id_usuario = planes.id_profesional')
                     ->join('usuarios as pac', 'pac.id_usuario = planes.id_paciente')
                     ->join('diagnosticos', 'diagnosticos.nombre = planes.nombre_diagnostico', 'left')
