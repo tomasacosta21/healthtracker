@@ -127,6 +127,7 @@ class PlanController extends BaseController
                     // Lógica simple para Tipo de Tarea (Asumimos ID 1 si no se especifica o si viene texto)
                     // Lo ideal es que el JS envíe el ID real desde un select.
                     $tipoTareaId = (isset($t['tipo']) && is_numeric($t['tipo'])) ? $t['tipo'] : 1; 
+                    $medicamento = !empty($t['nombre_medicamento']) ? $t['nombre_medicamento'] : null;
 
                     $dataTarea = [
                         'id_plan'              => $planId,
@@ -134,7 +135,7 @@ class PlanController extends BaseController
                         'num_tarea'            => $numTarea++,
                         'descripcion'          => $t['descripcion'],
                         'fecha_programada'     => $t['fecha_programada'],
-                        // 'fecha_fin_programada' => ... (opcional)
+                        'nombre_medicamento' => $medicamento,
                         'estado'               => 'Pendiente'
                     ];
                     
@@ -159,6 +160,33 @@ class PlanController extends BaseController
         }
         
         return redirect()->to('/profesional')->with('success', 'Plan creado correctamente.');
+    }
+
+    public function cambiarEstado($idPlan){
+        $planModel = new PlanModel();
+        $plan = $planModel->find($idPlan);
+    
+        if (!$plan) return $this->response->setJSON(['success' => false, 'message' => 'Plan no encontrado']);
+
+        // Verificar permisos (Solo profesional dueño)
+        $userId = session()->get('id_usuario');
+        if (session()->get('nombre_rol') === 'Profesional' && $plan->id_profesional != $userId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No autorizado']);
+        }
+
+        // Lógica de cambio (Toggle)
+        $nuevoEstado = ($plan->estado === 'Vigente') ? 'Finalizado' : 'Vigente';
+    
+        // Opcional: Validar reglas de negocio aquí (ej: chequear si fecha fin pasó o tareas al 100%)
+        // Como pediste que sea manual, simplemente lo cambiamos.
+
+        $planModel->update($idPlan, ['estado' => $nuevoEstado]);
+
+        return $this->response->setJSON([
+            'success' => true, 
+            'nuevo_estado' => $nuevoEstado,
+            'message' => "Plan marcado como {$nuevoEstado}"
+        ]);
     }
 
     public function show($id = null)

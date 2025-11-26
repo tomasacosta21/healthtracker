@@ -112,6 +112,18 @@
                 <label for="task-fecha">Fecha Programada</label>
                 <input type="datetime-local" id="task-fecha">
             </div>
+
+            <div class="field">
+                <label for="task-medicamento-init">Medicamento (Opcional)</label>
+                <select id="task-medicamento-init" style="width: 100%; padding: 8px;">
+                    <option value="">-- Ninguno / No aplica --</option>
+                    <?php if (! empty($listaMedicamentos)): ?>
+                        <?php foreach ($listaMedicamentos as $med): ?>
+                            <option value="<?= esc($med->nombre) ?>"><?= esc($med->nombre) ?></option>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
             
             <div style="margin-top:20px; display:flex; justify-content: flex-end; gap:10px;">
                 <button class="btn-cancel" type="button" onclick="closeTaskCreator()">Cancelar</button>

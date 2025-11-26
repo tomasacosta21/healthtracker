@@ -156,6 +156,8 @@ function addTaskToPlan() {
     const tipoSelect = document.getElementById('task-tipo');
     const tipoId = tipoSelect.value; // El ID (para la BD)
     const tipoNombre = tipoSelect.options[tipoSelect.selectedIndex].text; // El Nombre (para mostrar)
+    const medSelect = document.getElementById('task-medicamento-init');
+    const medNombre = medSelect.value; // El value es el nombre del medicamento
 
     if (!desc) {
         alert('La descripción es obligatoria.');
@@ -181,11 +183,12 @@ function addTaskToPlan() {
     li.style.display = "flex";
     li.style.justifyContent = "space-between";
     li.style.alignItems = "center";
+    const medInfo = medNombre ? `<br><small style="color:#000033;"> ${escapeHtml(medNombre)}</small>` : '';
     
     li.innerHTML = `
         <div>
             <strong>${escapeHtml(tipoNombre)}</strong>: ${escapeHtml(desc)} <br>
-            <small style="color: #666;">📅 ${fecha.replace('T',' ')}</small>
+            <small style="color: #555;">📅 ${fecha.replace('T',' ')}</small>
         </div>
         <button type="button" onclick="removeTask('${key}')" class="btn-delete" style="padding: 4px 8px; font-size: 12px;">Quitar</button>
     `;
@@ -197,8 +200,53 @@ function addTaskToPlan() {
     createHiddenInput(inputsContainer, `tareas[${key}][descripcion]`, desc, key);
     createHiddenInput(inputsContainer, `tareas[${key}][fecha_programada]`, fecha, key);
     createHiddenInput(inputsContainer, `tareas[${key}][tipo]`, tipoId, key); // Aquí va el ID
+    if(medNombre) {
+        createHiddenInput(inputsContainer, `tareas[${key}][nombre_medicamento]`, medNombre, key);
+    }
 
     closeTaskCreator();
+
+    document.getElementById('task-descripcion').value = '';
+    document.getElementById('task-fecha').value = '';
+    document.getElementById('task-tipo').selectedIndex = 0;
+    if(medSelect) medSelect.selectedIndex = 0;
+}
+
+function togglePlanStatus(planId) {
+    if(!confirm("¿Deseas cambiar el estado del plan (Vigente <-> Finalizado)?")) return;
+
+    const base = document.querySelector('meta[name="base-url"]').content || '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch(`${base}/profesional/planes/${planId}/estado`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': token
+        }
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.success) {
+            // Actualizar UI sin recargar
+            const badge = document.getElementById(`badge-estado-${planId}`);
+            if(badge) {
+                badge.textContent = res.nuevo_estado;
+                if(res.nuevo_estado === 'Vigente') {
+                    badge.style.backgroundColor = '#d1fae5';
+                    badge.style.color = '#065f46';
+                } else {
+                    badge.style.backgroundColor = '#e5e7eb';
+                    badge.style.color = '#374151';
+                }
+            }
+            alert(res.message);
+        } else {
+            alert('Error: ' + res.message);
+        }
+    })
+    .catch(err => console.error(err));
 }
 
 function createHiddenInput(container, name, value, key) {
@@ -582,3 +630,4 @@ window.toggleNewTaskForm = toggleNewTaskForm;
 window.saveNewTask = saveNewTask;
 window.openProgressModal = openProgressModal;
 window.markTaskComplete = markTaskComplete;
+window.togglePlanStatus = togglePlanStatus;

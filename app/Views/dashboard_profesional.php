@@ -94,12 +94,21 @@
                                     <td>
                                         <small>In: <?= esc($plan->fecha_inicio) ?></small><br>
                                         <small>Fin: <?= esc($plan->fecha_fin) ?></small>
+                                        <?php 
+                                            $estadoClass = ($plan->estado === 'Vigente') ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600';
+                                            $colorBg = ($plan->estado === 'Vigente') ? '#d1fae5' : '#e5e7eb';
+                                            $colorTxt = ($plan->estado === 'Vigente') ? '#065f46' : '#374151';
+                                        ?>
+                                        <span id="badge-estado-<?= $plan->id ?>" style="background:<?= $colorBg ?>; color:<?= $colorTxt ?>; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">
+                                            <?= esc($plan->estado) ?>
+                                        </span>
                                     </td>
                                     <td class="actions">
                                         <button class="btn-secondary" onclick="openTasksModal(<?= esc($plan->id) ?>)">Tareas</button>
                                         <button class="btn-edit" onclick="openModal('planes', 'edit', this.closest('tr'))">Editar</button>
                                         <button class="btn-delete" onclick="deleteRecord('planes', <?= esc($plan->id) ?>)">Eliminar</button>
                                         <button class="btn-view" onclick="openProgressModal(<?= esc($plan->id) ?>)" title="Ver Progreso y Comentarios"> Progreso </button>
+                                        <button class="btn-edit" onclick="togglePlanStatus(<?= esc($plan->id) ?>)" title="Cambiar Estado">Modificar estado</button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -266,7 +275,8 @@
     <?= view('planes/modal_form', [
         'todosLosPacientes' => $todosLosPacientes ?? [],
         'listaDiagnosticos' => $listaDiagnosticos ?? [],
-        'listaTiposTarea'   => $listaTiposTarea ?? []
+        'listaTiposTarea'   => $listaTiposTarea ?? [],
+        'listaMedicamentos' => $listaMedicamentos ?? []
     ]) ?>
 
     <?= view('planes/tasks_modal') ?>

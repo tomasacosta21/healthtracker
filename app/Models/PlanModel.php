@@ -10,7 +10,7 @@ class PlanModel extends Model
     protected $primaryKey       = 'id';
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
-    protected $allowedFields    = ['nombre', 'descripcion', 'id_profesional', 'id_paciente', 'nombre_diagnostico', 'fecha_inicio', 'fecha_fin'];
+    protected $allowedFields    = ['nombre', 'descripcion', 'id_profesional', 'id_paciente', 'nombre_diagnostico', 'fecha_inicio', 'fecha_fin', 'estado'];
     protected $useTimestamps    = false;
 
     protected $validationRules = [

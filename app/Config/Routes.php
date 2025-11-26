@@ -120,9 +120,9 @@ $routes->group('profesional', ['filter' => 'auth:Profesional'], static function 
     // Endpoint específico para obtener tareas de un plan (útil para AJAX/Modales)
     $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
 
-    // HU-09: Validar Cumplimiento
-    // Entidad: Tarea (Acción específica de negocio)
-    $routes->post('tareas/(:num)/validar', 'TareaController::validarCumplimiento/$1');
+    // HU-09: Validar Cumplimiento (Profesional cambia estado del plan)
+    // Entidad: Plan (Acción específica de negocio)
+    $routes->post('planes/(:num)/estado', 'PlanController::cambiarEstado/$1');
 });
 
 
