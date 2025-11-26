@@ -60,4 +60,11 @@ class PlanModel extends Model
     {
         return $this->where('id_paciente', $idPaciente)->findAll();
     }
+
+    public function getPlanesActivosPorProfesional($idProfesional)
+    {
+        return $this->where('id_profesional', $idProfesional)
+                    ->where('estado', 'Vigente')
+                    ->findAll();
+    }
 }

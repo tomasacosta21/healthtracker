@@ -8,6 +8,7 @@ use App\Models\MedicamentoModel;
 use App\Models\DiagnosticoModel;
 use App\Models\TareaModel;
 use App\Models\TipoTareaModel;
+use App\Models\RolModel;
 
 class DashboardController extends BaseController
 {
@@ -49,13 +50,14 @@ class DashboardController extends BaseController
         $medicamentoModel  = new MedicamentoModel();
         $diagnosticoModel  = new DiagnosticoModel();
         $tipoTareaModel    = new TipoTareaModel();
-        $rolModel          = new \App\Models\RolModel(); // Asegúrate de tener este modelo o usar el namespace completo
+        $rolModel          = new RolModel(); // Asegúrate de tener este modelo o usar el namespace completo
 
         // 2. Recopilar TODOS los datos para la vista
         $data = [
             // --- A. Datos para Stats (Gráficos y Tarjetas) ---
             'totalUsuarios'     => $usuarioModel->countAllResults(),
             'totalMedicamentos' => $medicamentoModel->countAllResults(),
+            'totalProfesionales'=> $usuarioModel->where('nombre_rol', 'Profesional')->countAllResults(),
             'totalPlanes'       => $planModel->countAllResults(),
             'usuariosPorRol'    => $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
                                                 ->groupBy('nombre_rol')
@@ -95,6 +97,7 @@ class DashboardController extends BaseController
         // 2. Obtener datos
         $misPacientes = $usuarioModel->getPacientesPorProfesional($idProfesional);
         $misPlanes    = $planModel->getPlanesPorProfesional($idProfesional);
+        $planesActivos = $planModel->getPlanesActivosPorProfesional($idProfesional);
 
         // Datos para los formularios (Selects)
         $todosLosPacientes = $usuarioModel->getPacientes(); // Para poder asignar plan a cualquier paciente
@@ -107,7 +110,7 @@ class DashboardController extends BaseController
         $data = [
             // Stats
             'totalPacientes'    => count($misPacientes),
-            'planesActivos'     => count($misPlanes),
+            'planesActivos'     => count($planesActivos),
 
             // Listas para tablas y selects
             'listaPlanes'       => $misPlanes,
