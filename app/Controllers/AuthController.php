@@ -196,14 +196,22 @@ class AuthController extends BaseController
         
         // Construir URL de restablecimiento
         $resetUrl = base_url("reset-password?token={$token}");
-        
-        $mensaje = 'Se genero un enlace de restablecimiento de contraseña. '
-            . 'Copia y pega este enlace en tu navegador: '
-            . '<br><code>' . esc($resetUrl) . '</code>'
-            . '<br><br><small>En producción este enlace se enviaría por correo electrónico.</small>';
+
+        $mensaje = '
+            Se generó un enlace de restablecimiento de contraseña.
+            <br><br>
+            <a href="' . esc($resetUrl) . '" 
+            style="display:inline-block; padding:10px 18px; background-color:#4CAF50; color:white; 
+                    text-decoration:none; border-radius:4px; font-weight:bold;">
+                Hacé click aquí para restablecer tu contraseña
+            </a>
+            <br><br>
+            <small>En producción este enlace se enviaría por correo electrónico.</small>
+        ';
 
         return redirect()->to(base_url('forgot-password'))
             ->with('success', $mensaje);
+
     }
     
     /**

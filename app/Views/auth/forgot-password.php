@@ -29,7 +29,7 @@
 
         <?php if(session()->getFlashdata('success')): ?>
             <div style="color: green; margin-bottom: 15px; text-align: center; padding: 10px; background-color: #d4edda; border-radius: 5px;">
-                <?= esc(session()->getFlashdata('success')) ?>
+                <?= session()->getFlashdata('success') ?>
             </div>
         <?php endif; ?>
         
