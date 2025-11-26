@@ -268,4 +268,55 @@ class PlanController extends BaseController
             return redirect()->back()->with('error', 'Error al eliminar.');
         }
     }
+
+    //HU-12: Vista global de planes para Administrador
+
+    public function globalView(){
+        $planModel = new PlanModel();
+        $usuarioModel = new UsuarioModel();
+    
+        // 1. Obtener listado completo (con joins para nombres)
+        // Usamos el método que ya tenías o construimos uno similar para lista
+        $todosLosPlanes = $planModel->select('planes.*, 
+                                        prof.nombre as nombre_profesional, prof.apellido as apellido_profesional,
+                                        pac.nombre as nombre_paciente, pac.apellido as apellido_paciente')
+                                ->join('usuarios as prof', 'prof.id_usuario = planes.id_profesional')
+                                ->join('usuarios as pac', 'pac.id_usuario = planes.id_paciente')
+                                ->findAll();
+
+        // 2. Calcular Estadísticas
+        $hoy = date('Y-m-d');
+    
+        // A. Planes Activos vs Completados (Basado en fecha)
+        $totalActivos = $planModel->where('fecha_fin >=', $hoy)->countAllResults();
+        $totalCompletados = $planModel->where('fecha_fin <', $hoy)->countAllResults();
+
+        // B. Profesionales (Total vs Con Planes vs Sin Planes)
+        $totalProfesionales = $usuarioModel->where('nombre_rol', 'Profesional')->countAllResults();
+        // Obtenemos IDs únicos de profesionales que están en la tabla planes
+        $profsConPlanes = $planModel->distinct()->findColumn('id_profesional') ?? [];
+        $countProfsConPlanes = count(array_unique($profsConPlanes));
+        $countProfsSinPlanes = $totalProfesionales - $countProfsConPlanes;
+
+        // C. Pacientes (Total vs Con Planes vs Sin Planes)
+        $totalPacientes = $usuarioModel->where('nombre_rol', 'Paciente')->countAllResults();
+        $pacsConPlanes = $planModel->distinct()->findColumn('id_paciente') ?? [];
+        $countPacsConPlanes = count(array_unique($pacsConPlanes));
+        $countPacsSinPlanes = $totalPacientes - $countPacsConPlanes;
+
+        $data = [
+            'listaPlanes' => $todosLosPlanes,
+            'stats' => [
+                'activos' => $totalActivos,
+                'completados' => $totalCompletados,
+                'profs_con' => $countProfsConPlanes,
+                'profs_sin' => $countProfsSinPlanes,
+                'pacs_con' => $countPacsConPlanes,
+                'pacs_sin' => $countPacsSinPlanes
+            ]
+        ];
+
+        return view('admin/planes_global_view', $data);
+    }
+
 }

@@ -43,28 +43,33 @@ class DashboardController extends BaseController
      */
     public function adminDashboard()
     {
-        // 1. Instanciar modelos necesarios para métricas globales
-        $usuarioModel = new UsuarioModel();
-        $medicamentoModel = new MedicamentoModel();
-        $planModel = new PlanModel();
-        $diagnosticoModel = new DiagnosticoModel();
+        // 1. Instanciar todos los modelos necesarios
+        $usuarioModel      = new UsuarioModel();
+        $planModel         = new PlanModel();
+        $medicamentoModel  = new MedicamentoModel();
+        $diagnosticoModel  = new DiagnosticoModel();
+        $tipoTareaModel    = new TipoTareaModel();
+        $rolModel          = new \App\Models\RolModel(); // Asegúrate de tener este modelo o usar el namespace completo
 
-        // 2. Recopilar datos
+        // 2. Recopilar TODOS los datos para la vista
         $data = [
-            'totalUsuarios'      => $usuarioModel->countAllResults(),
-            // Lista completa de usuarios para mostrar en el dashboard
-            'usuarios'           => $usuarioModel->findAll(),
+            // --- A. Datos para Stats (Gráficos y Tarjetas) ---
+            'totalUsuarios'     => $usuarioModel->countAllResults(),
             'totalMedicamentos' => $medicamentoModel->countAllResults(),
             'totalPlanes'       => $planModel->countAllResults(),
-
-            // Agrupar usuarios por rol para el gráfico/tabla
             'usuariosPorRol'    => $usuarioModel->select('nombre_rol, COUNT(*) as cantidad')
-                ->groupBy('nombre_rol')
-                ->findAll(),
-
-            // Datos adicionales para las tablas del dashboard
-            'actividad'         => [], // Aquí podrías conectar una tabla de logs si la tuvieras
-            'diagnosticos'      => $diagnosticoModel->findAll(5) // Traer 5 de ejemplo
+                                                ->groupBy('nombre_rol')
+                                                ->findAll(),
+            
+            // Datos Dummy para gráficas (puedes conectarlos a logica real luego)
+            'actividad'         => [], 
+            
+            // --- B. Datos para Tablas CRUD (LO QUE FALTABA) ---
+            'usuarios'          => $usuarioModel->findAll(), // Para la tabla de gestión de usuarios
+            'listaMedicamentos' => $medicamentoModel->findAll(),
+            'listaDiagnosticos' => $diagnosticoModel->findAll(),
+            'listaTiposTarea'   => $tipoTareaModel->findAll(),
+            'listaRoles'        => $rolModel->findAll(),
         ];
 
         // 3. Cargar vista
@@ -165,5 +170,7 @@ class DashboardController extends BaseController
 
     return view('dashboard_paciente', $data);
     } 
+
+    
     
 }

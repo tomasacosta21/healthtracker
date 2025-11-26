@@ -4,22 +4,22 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\RolModel;
-use CodeIgniter\HTTP\IncomingRequest;
 
 class RolController extends BaseController
 {
-
+    /**
+     * Si alguien intenta entrar directo a /admin/roles,
+     * lo mandamos al dashboard general.
+     */
     public function index()
     {
-        $model = new RolModel();
-        $data['roles'] = $model->findAll();
-
-        return view('admin/listar_roles', $data);
+        return redirect()->to(base_url('admin'));
     }
 
     public function new()
     {
-        return view('admin/crear_rol');
+        // No usamos vista individual, usamos el modal del dashboard
+        return redirect()->to(base_url('admin'));
     }
 
     public function create()
@@ -34,41 +34,29 @@ class RolController extends BaseController
             return redirect()->back()->withInput()->with('errors', $model->errors());
         }
 
-        return redirect()->to(base_url('admin/roles'))
-                         ->with('success', 'Rol creado correctamente');
+        // CORRECCIÓN: Usar back() para volver al Dashboard con el mensaje
+        return redirect()->back()->with('success', 'Rol creado correctamente');
     }
 
     public function show($id = null)
     {
-        $model = new RolModel();
-        $rol = $model->find($id);
-
-        if (! $rol) {
-            return redirect()->to(base_url('admin/roles'))->with('error', 'Rol no encontrado');
-        }
-
-        return view('admin/ver_rol', ['rol' => $rol]);
+        // No necesitamos vista detalle individual por ahora
+        return redirect()->to(base_url('admin'));
     }
 
     public function edit($id = null)
     {
-        $model = new RolModel();
-        $rol = $model->find($id);
-
-        if (! $rol) {
-            return redirect()->to(base_url('admin/roles'))->with('error', 'Rol no encontrado');
-        }
-
-        return view('admin/editar_rol', ['rol' => $rol]);
+        // La edición se maneja vía Modal en el dashboard
+        return redirect()->to(base_url('admin'));
     }
 
     public function update($id = null)
     {
         $model = new RolModel();
-        $rol = $model->find($id);
-
-        if (! $rol) {
-            return redirect()->to(base_url('admin/roles'))->with('error', 'Rol no encontrado');
+        
+        // Validación de existencia
+        if (!$model->find($id)) {
+            return redirect()->back()->with('error', 'Rol no encontrado');
         }
 
         $data = [
@@ -79,22 +67,21 @@ class RolController extends BaseController
             return redirect()->back()->withInput()->with('errors', $model->errors());
         }
 
-        return redirect()->to(base_url('admin/roles'))
-                         ->with('success', 'Rol actualizado correctamente');
+        // CORRECCIÓN: Usar back()
+        return redirect()->back()->with('success', 'Rol actualizado correctamente');
     }
 
     public function delete($id = null)
     {
         $model = new RolModel();
-        $rol = $model->find($id);
-
-        if (! $rol) {
-            return redirect()->to(base_url('admin/roles'))->with('error', 'Rol no encontrado');
+        
+        if (!$model->find($id)) {
+            return redirect()->back()->with('error', 'Rol no encontrado');
         }
 
         $model->delete($id);
 
-        return redirect()->to(base_url('admin/roles'))
-                         ->with('success', 'Rol eliminado correctamente');
+        // CORRECCIÓN: Usar back()
+        return redirect()->back()->with('success', 'Rol eliminado correctamente');
     }
 }

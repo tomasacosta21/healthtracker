@@ -80,6 +80,8 @@ $routes->group('admin', ['filter' => 'auth:Administrador'], static function ($ro
     $routes->resource('tipos-tarea', ['controller' => 'TipoTareaController']);
     // Entidad: Rol
     $routes->resource('roles', ['controller' => 'RolController']);
+    $routes->get('planes-global', 'PlanController::globalView');
+    $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
 });
 
 
