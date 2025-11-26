@@ -5,23 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Médico - HealthTracker</title>
     <link rel="stylesheet" href="<?= base_url('styles.css') ?>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Espaciado entre secciones para que no se vean pegadas */
+        /* Ajustes específicos para secciones */
         .entity-section { margin-bottom: 40px; scroll-margin-top: 20px; }
+        
+        /* Estilos para los íconos de las tarjetas de estadísticas */
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        /* Asegurar alineación en tablas */
+        table td { vertical-align: middle; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="<?= base_url('views/images/healthtrackerv1.png') ?>" alt="Logo" class="logo-img">
+        </div>
         <h1>HealthTracker</h1>
         <nav>
-            <button class="nav-btn" onclick="scrollToSection('resumen')">Resumen</button>
-            <button class="nav-btn" onclick="scrollToSection('planes')">Gestión de Planes</button>
-            <button class="nav-btn" onclick="scrollToSection('pacientes')">Mis Pacientes</button>
-            <button class="nav-btn" onclick="scrollToSection('medicamentos')">Medicamentos</button>
-            <button class="nav-btn" onclick="scrollToSection('diagnosticos')">Diagnosticos</button>
-            <button class="nav-btn" onclick="scrollToSection('tipos-tarea')">Tipos de tareas</button>
+            <button class="nav-btn" onclick="scrollToSection('resumen')">
+                <i class="fas fa-chart-line" style="width:20px;"></i> Resumen
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('planes')">
+                <i class="fas fa-clipboard-list" style="width:20px;"></i> Gestión de Planes
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('pacientes')">
+                <i class="fas fa-user-injured" style="width:20px;"></i> Mis Pacientes
+            </button>
             
-            <button onclick="window.location.href='<?= base_url('logout') ?>'" class="nav-btn" style="margin-top: auto; background-color: #dc2626;">Cerrar Sesión</button>
+            <div style="padding: 15px 20px 5px; color: #aaa; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Configuración</div>
+            
+            <button class="nav-btn" onclick="scrollToSection('medicamentos')">
+                <i class="fas fa-pills" style="width:20px;"></i> Medicamentos
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('diagnosticos')">
+                <i class="fas fa-stethoscope" style="width:20px;"></i> Diagnósticos
+            </button>
+            <button class="nav-btn" onclick="scrollToSection('tipos-tarea')">
+                <i class="fas fa-tasks" style="width:20px;"></i> Tipos de Tareas
+            </button>
+            
+            <button onclick="window.location.href='<?= base_url('logout') ?>'" class="nav-btn" style="margin-top: auto; background-color: #dc2626;">
+                <i class="fas fa-sign-out-alt" style="width:20px;"></i> Cerrar Sesión
+            </button>
         </nav>
     </aside>
 
@@ -31,19 +64,25 @@
             <div class="content-card">
                 <div class="header-section">
                     <h2>Resumen General</h2>
-                    <button class="btn-primary" onclick="location.reload()">Actualizar</button>
+                    <button class="btn-primary" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
                 </div>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <img src="<?= base_url('/icons/pacientes.png') ?>" width="64px">    
+                        <div class="stat-icon" style="background:#e0f2fe; color:#0284c7;">
+                            <i class="fas fa-user-injured"></i>
+                        </div>    
                         <div class="stat-info">
                             <div class="stat-value"><?= esc($totalPacientes) ?></div>
                             <div class="stat-label">Pacientes Asignados</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <img src="<?= base_url('/icons/planes_activos.png') ?>" width="64px">
+                        <div class="stat-icon" style="background:#dcfce7; color:#16a34a;">
+                            <i class="fas fa-file-medical-alt"></i>
+                        </div>
                         <div class="stat-info">
                             <div class="stat-value"><?= esc($planesActivos) ?></div>
                             <div class="stat-label">Planes Activos</div>
@@ -57,7 +96,9 @@
             <div class="content-card">
                 <div class="header-section">
                     <h2>Gestión de Planes</h2>
-                    <button class="btn-primary" onclick="openModal('planes', 'create')">+ Nuevo Plan</button>
+                    <button class="btn-primary" onclick="openModal('planes', 'create')">
+                        <i class="fas fa-plus"></i> Nuevo Plan
+                    </button>
                 </div>
                 <div class="search-bar">
                     <input type="text" placeholder="Buscar planes..." onkeyup="filterTable('planes')">
@@ -87,7 +128,7 @@
                                     <td>#<?= esc($plan->id) ?></td>
                                     <td>
                                         <strong><?= esc($plan->nombre) ?></strong><br>
-                                        <small style="color:#555"><?= esc($plan->descripcion) ?></small>
+                                        <small style="color:#64748b"><?= esc($plan->descripcion) ?></small>
                                     </td>
                                     <td>ID: <?= esc($plan->id_paciente) ?></td>
                                     <td><?= esc($plan->nombre_diagnostico) ?></td>
@@ -95,20 +136,32 @@
                                         <small>In: <?= esc($plan->fecha_inicio) ?></small><br>
                                         <small>Fin: <?= esc($plan->fecha_fin) ?></small>
                                         <?php 
-                                            $estadoClass = ($plan->estado === 'Vigente') ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600';
                                             $colorBg = ($plan->estado === 'Vigente') ? '#d1fae5' : '#e5e7eb';
                                             $colorTxt = ($plan->estado === 'Vigente') ? '#065f46' : '#374151';
                                         ?>
-                                        <span id="badge-estado-<?= $plan->id ?>" style="background:<?= $colorBg ?>; color:<?= $colorTxt ?>; padding:2px 6px; border-radius:4px; font-size:0.85em; font-weight:bold;">
+                                        <br>
+                                        <span id="badge-estado-<?= $plan->id ?>" style="background:<?= $colorBg ?>; color:<?= $colorTxt ?>; padding:2px 8px; border-radius:12px; font-size:0.75em; font-weight:700; text-transform:uppercase;">
                                             <?= esc($plan->estado) ?>
                                         </span>
                                     </td>
-                                    <td class="actions">
-                                        <button class="btn-secondary" onclick="openTasksModal(<?= esc($plan->id) ?>)">Tareas</button>
-                                        <button class="btn-edit" onclick="openModal('planes', 'edit', this.closest('tr'))">Editar</button>
-                                        <button class="btn-delete" onclick="deleteRecord('planes', <?= esc($plan->id) ?>)">Eliminar</button>
-                                        <button class="btn-view" onclick="openProgressModal(<?= esc($plan->id) ?>)" title="Ver Progreso y Comentarios"> Progreso </button>
-                                        <button class="btn-edit" onclick="togglePlanStatus(<?= esc($plan->id) ?>)" title="Cambiar Estado">Modificar estado</button>
+                                    <td>
+                                        <div class="actions">
+                                            <button class="btn-secondary btn-icon" onclick="openTasksModal(<?= esc($plan->id) ?>)" title="Gestionar Tareas">
+                                                <i class="fas fa-list-check"></i>
+                                            </button>
+                                            <button class="btn-edit btn-icon" onclick="openModal('planes', 'edit', this.closest('tr'))" title="Editar Plan">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+                                            <button class="btn-delete btn-icon" onclick="deleteRecord('planes', <?= esc($plan->id) ?>)" title="Eliminar Plan">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            <button class="btn-view btn-icon" onclick="openProgressModal(<?= esc($plan->id) ?>)" title="Ver Progreso">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </button>
+                                            <button class="btn-edit btn-icon" onclick="togglePlanStatus(<?= esc($plan->id) ?>)" title="Cambiar Estado" style="background-color: #4b5563; border-color: #4b5563;">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -135,8 +188,14 @@
                                 <tr>
                                     <td><?= esc($paciente->nombre . ' ' . $paciente->apellido) ?></td>
                                     <td><?= esc($paciente->email) ?></td>
-                                    <td><?= esc($paciente->nombre_rol) ?></td>
-                                    <td><button class="btn-edit" onclick="alert('Funcionalidad de perfil pendiente')">Ver Perfil</button></td>
+                                    <td><span style="background:#f1f5f9; padding:4px 8px; border-radius:12px; font-size:0.85em; font-weight:600; color:#475569;"><?= esc($paciente->nombre_rol) ?></span></td>
+                                    <td>
+                                        <div class="actions">
+                                            <button class="btn-edit btn-icon" onclick="alert('Funcionalidad de perfil pendiente')" title="Ver Perfil">
+                                                <i class="fas fa-user"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -151,7 +210,9 @@
             <div class="content-card">
                 <div class="header-section">
                     <h2>Medicamentos</h2>
-                    <button class="btn-primary" onclick="openDynamicModal('medicamentos', 'create')">+ Nuevo</button>
+                    <button class="btn-primary" onclick="openDynamicModal('medicamentos', 'create')">
+                        <i class="fas fa-plus"></i> Nuevo
+                    </button>
                 </div>
                 <table id="medicamentos-table">
                     <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -159,8 +220,12 @@
                         <?php foreach ($listaMedicamentos as $m): ?>
                         <tr data-id="<?= esc($m->nombre) ?>" data-nombre="<?= esc($m->nombre) ?>">
                             <td><?= esc($m->nombre) ?></td>
-                            <td class="actions">
-                                <button class="btn-delete" onclick="deleteRecord('medicamentos', '<?= esc($m->nombre) ?>')">Eliminar</button>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn-delete btn-icon" onclick="deleteRecord('medicamentos', '<?= esc($m->nombre) ?>')" title="Eliminar"> 
+                                        <i class="fas fa-trash"></i>    
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -173,7 +238,9 @@
             <div class="content-card">
             <div class="header-section">
                 <h2>Diagnósticos</h2>
-                <button class="btn-primary" onclick="openDynamicModal('diagnosticos', 'create')">+ Nuevo</button>
+                <button class="btn-primary" onclick="openDynamicModal('diagnosticos', 'create')">
+                    <i class="fas fa-plus"></i> Nuevo
+                </button>
             </div>
             <table id="diagnosticos-table">
                 <thead><tr><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
@@ -182,11 +249,17 @@
                         <tr data-id="<?= esc($d->nombre) ?>" 
                             data-nombre="<?= esc($d->nombre) ?>" 
                             data-descripcion="<?= esc($d->descripcion) ?>">
-                            <td><?= esc($d->nombre) ?></td>
+                            <td><strong><?= esc($d->nombre) ?></strong></td>
                             <td><?= esc($d->descripcion) ?></td>
-                            <td class="actions">
-                                <button class="btn-edit" onclick="openDynamicModal('diagnosticos', 'edit', this.closest('tr'))">Editar</button>
-                                <button class="btn-delete" onclick="deleteRecord('diagnosticos', '<?= esc($d->nombre) ?>')">Eliminar</button>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn-edit btn-icon" onclick="openDynamicModal('diagnosticos', 'edit', this.closest('tr'))" title="Editar">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="btn-delete btn-icon" onclick="deleteRecord('diagnosticos', '<?= esc($d->nombre) ?>')" title="Eliminar"> 
+                                        <i class="fas fa-trash"></i>    
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -199,7 +272,9 @@
             <div class="content-card">
                 <div class="header-section">
                     <h2>Tipos de Tarea</h2>
-                    <button class="btn-primary" onclick="openDynamicModal('tipos-tarea', 'create')">+ Nuevo</button>
+                    <button class="btn-primary" onclick="openDynamicModal('tipos-tarea', 'create')">
+                        <i class="fas fa-plus"></i> Nuevo
+                    </button>
                 </div>
                 <table id="tipos-tarea-table">
                     <thead><tr><th>Nombre</th><th>Acciones</th></tr></thead>
@@ -207,9 +282,15 @@
                         <?php foreach ($listaTiposTarea as $t): ?>
                         <tr data-id="<?= esc($t->id_tipo_tarea) ?>" data-nombre="<?= esc($t->nombre) ?>">
                             <td><?= esc($t->nombre) ?></td>
-                            <td class="actions">
-                                <button class="btn-edit" onclick="openDynamicModal('tipos-tarea', 'edit', this.closest('tr'))">Editar</button>
-                                <button class="btn-delete" onclick="deleteRecord('tipos-tarea', <?= esc($t->id_tipo_tarea) ?>)">Eliminar</button>
+                            <td>
+                                <div class="actions">
+                                    <button class="btn-edit btn-icon" onclick="openDynamicModal('tipos-tarea', 'edit', this.closest('tr'))" title="Editar">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button class="btn-delete btn-icon" onclick="deleteRecord('tipos-tarea', <?= esc($t->id_tipo_tarea) ?>)" title="Eliminar"> 
+                                        <i class="fas fa-trash"></i>    
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -217,8 +298,6 @@
                 </table>
             </div>
         </div>
-
-        
 
         <div id="progress-modal" class="modal">
             <div class="modal-content" style="max-width: 700px;">
@@ -302,13 +381,13 @@
             }
         }
 
-        // Helper simple para cerrar modales por ID (fallback)
         function closeModal(id) {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
         }
     </script>
     <script>
+    // Configuración de campos para el modal dinámico
     const formConfigs = {
         'medicamentos': [ { name: 'nombre', label: 'Nombre del Medicamento', type: 'text', required: true } ],
         'tipos-tarea': [ { name: 'nombre', label: 'Nombre del Tipo', type: 'text', required: true } ],
@@ -333,8 +412,8 @@
         if(config) {
             config.forEach(field => {
                 const div = document.createElement('div');
-                div.className = 'form-group'; // Usa tus clases CSS existentes
-                div.innerHTML = `<label>${field.label}</label>`;
+                div.className = 'form-group';
+                div.innerHTML = `<label style="font-weight:600; color:#333;">${field.label}</label>`;
                 
                 let input;
                 if (field.type === 'textarea') {
@@ -347,7 +426,10 @@
                 input.name = field.name;
                 if(field.required) input.required = true;
                 
-                // Rellenar si es edición
+                // Estilo base para inputs dinámicos
+                input.style.width = '100%'; input.style.padding = '10px';
+                input.style.border = '1px solid #cbd5e1'; input.style.borderRadius = '6px';
+                
                 if(mode === 'edit' && trElement) {
                     input.value = trElement.dataset[field.name] || '';
                 }
@@ -357,8 +439,6 @@
             });
         }
 
-        // Configurar URL
-        // Construir la URL de acción de forma robusta usando el meta base-url y el role
         const baseMeta = document.querySelector('meta[name="base-url"]').content.replace(/\/$/, '') || '';
         const roleSegment = (window.serverData && window.serverData.role) ? String(window.serverData.role).toLowerCase() : (window.location.pathname.split('/')[1] || '');
         const baseUrl = baseMeta ? `${baseMeta}/${roleSegment}` : window.location.pathname.split('/').slice(0, 2).join('/');
@@ -369,7 +449,7 @@
         } else {
             title.textContent = 'Editar Registro';
             const id = trElement.dataset.id;
-            actionUrl += `/${id}`;
+            actionUrl += `/${encodeURIComponent(id)}`;
             document.getElementById('dynamic-form-method').value = 'PUT';
         }
 

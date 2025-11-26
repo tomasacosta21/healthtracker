@@ -143,6 +143,8 @@ $routes->group('paciente', ['filter' => 'auth:Paciente'], static function ($rout
     // HU-08: Registrar Progreso (Completar tarea)
     // Entidad: Tarea
     $routes->post('tareas/(:num)/completar', 'TareaController::registrarProgreso/$1');
+    // Endpoint específico para obtener tareas de un plan
+    $routes->get('planes/(:num)/tareas', 'TareaController::porPlan/$1');
 
     // HU-11: Documentación Médica
     // Entidad: Documento (Si existe tabla documentos, sino va en UsuarioController o PlanController)
