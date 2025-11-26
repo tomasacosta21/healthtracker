@@ -16,10 +16,18 @@ class FilterAuth implements FilterInterface
             return redirect()->to(base_url('login'));
         }
 
+        
+
         // 2. Si se requiere un rol específico (ej. 'auth:Administrador')
         if (! empty($arguments)) {
             $requiredRole = $arguments[0];
             $userRole = $session->get('nombre_rol');
+
+            // Si el usuario es Administrador, tiene acceso a TODO.
+            // Ignoramos el requerimiento de la ruta y lo dejamos pasar.
+            if ($userRole === 'Administrador') {
+                return; 
+            }
 
             if ($userRole !== $requiredRole) {
                 // Si no tiene el rol, lo mandamos a su dashboard principal

@@ -56,6 +56,13 @@
             font-weight: 600;
             transition: all 0.2s;
         }
+        .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
         .btn-complete:hover { background-color: #10b981; color: white; }
     </style>
 </head>
@@ -83,21 +90,29 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">📋</div>
+                <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
                 <div class="stat-info">
                     <div class="stat-value"><?= esc($totalPlanes ?? 0) ?></div>
                     <div class="stat-label">Mis Planes</div>
                 </div>
             </div>
+
             <div class="stat-card">
-                <div class="stat-icon" style="background: #ffedd5; color: #c2410c;">⏳</div>
+                <div class="stat-icon" style="background: #ffedd5; color: #ea580c;">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
                 <div class="stat-info">
-                    <div class="stat-value" style="color: #c2410c;"><?= esc($totalPendientes ?? 0) ?></div>
+                    <div class="stat-value" style="color: #ea580c;"><?= esc($totalPendientes ?? 0) ?></div>
                     <div class="stat-label">Tareas Pendientes</div>
                 </div>
             </div>
+
             <div class="stat-card">
-                <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">✅</div>
+                <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
                 <div class="stat-info">
                     <div class="stat-value" style="color: #16a34a;"><?= esc($totalCompletadas ?? 0) ?></div>
                     <div class="stat-label">Tareas Completadas</div>

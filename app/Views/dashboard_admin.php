@@ -49,6 +49,16 @@
             <a href="<?= base_url('admin/planes-global') ?>" class="nav-btn">
                 <i class="fas fa-globe-americas" style="width:20px;"></i> Reporte Global
             </a>
+
+            <hr style="border-color: #555; margin: 15px 20px;">
+            <div style="padding: 0 20px 5px; color: #aaa; font-size: 0.75em; text-transform: uppercase;">Vistas de Rol</div>
+
+            <a href="<?= base_url('profesional') ?>" class="nav-btn">
+                <i class="fas fa-user-md" style="width:20px;"></i> Vista Médico
+            </a>
+            <a href="<?= base_url('paciente') ?>" class="nav-btn">
+                <i class="fas fa-user-injured" style="width:20px;"></i> Vista Paciente
+            </a>
             
             <button onclick="window.location.href='<?= base_url('logout') ?>'" class="nav-btn" style="margin-top: auto; background-color: #dc2626;">
                 <i class="fas fa-sign-out-alt" style="width:20px;"></i> Cerrar Sesión
